@@ -93,6 +93,23 @@ describe("Developer D Step 6: Driver Bookings Helpers (Pure Unit Tests)", () => 
       expect(canCancelBooking(booking, fixedNow)).toBe(true);
     });
 
+    // Regression: the button used to stay enabled for an undecided request whose
+    // slot had already started, so the driver could click Cancel and get a 400
+    // because the request had expired instead.
+    it("hides cancel for a requested booking whose start time has passed", () => {
+      const staleRequest = {
+        status: "requested" as const,
+        startAt: "2026-10-27T09:30:00.000Z",
+      };
+      expect(canCancelBooking(staleRequest, fixedNow)).toBe(false);
+
+      const exactStartRequest = {
+        status: "requested" as const,
+        startAt: "2026-10-27T10:00:00.000Z",
+      };
+      expect(canCancelBooking(exactStartRequest, fixedNow)).toBe(false);
+    });
+
     it("allows cancelling a confirmed booking strictly before its start time", () => {
       const futureConfirmed = {
         status: "confirmed" as const,

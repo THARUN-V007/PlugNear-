@@ -1,243 +1,219 @@
 -- ============================================================================
--- PlugNear: Repeatable Seed Script
--- Area: Indiranagar, Bengaluru (Karnataka, India)
--- Timezone: Asia/Kolkata (IST)
--- Shared Dev Password: Password123!
+-- PlugNear: Repeatable Seed Script (minimal, realistic demo data)
+-- Area: Indiranagar, Bengaluru (Karnataka, India) · Timezone: Asia/Kolkata
+-- Shared dev password: Password123!
+--
+-- Deliberately small: ONE host, ONE driver, TWO chargers, TWO bookings.
+-- Every record is written as believable production data - real landmarks,
+-- connector/power/price combinations you would actually see in Bengaluru, and
+-- host notes a driver would read before driving there.
+--
+-- Preferred path is still `npm run seed` (Admin API). This file is the SQL
+-- Editor alternative: it resolves users by email and only creates an auth.users
+-- row when it is missing, so it converges on the same data as the script and
+-- can be re-run safely.
 -- ============================================================================
 
--- Ensure pgcrypto is enabled for hashing dev passwords
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DO $$
 DECLARE
-  v_host1_id uuid := '11111111-1111-4111-8111-111111111111'::uuid;
-  v_host2_id uuid := '22222222-2222-4222-8222-222222222222'::uuid;
-  v_driver1_id uuid := '33333333-3333-4333-8333-333333333333'::uuid;
-  v_driver2_id uuid := '44444444-4444-4444-8444-444444444444'::uuid;
+  v_password text := crypt('Password123!', gen_salt('bf'));
+  v_host_id uuid;
+  v_driver_id uuid;
 
-  v_charger1_id uuid := 'a1111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid;
-  v_charger2_id uuid := 'a2222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid;
-  v_charger3_id uuid := 'a3333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid;
-  v_charger4_id uuid := 'a4444444-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid;
-  v_charger5_id uuid := 'a5555555-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid;
+  v_charger_home uuid := 'a1111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  v_charger_store uuid := 'a2222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
-  v_encrypted_password text := crypt('Password123!', gen_salt('bf'));
-  v_tomorrow date := CURRENT_DATE + interval '1 day';
+  v_tomorrow date := CURRENT_DATE + 1;
+  v_tomorrow_is_sunday boolean := EXTRACT(ISODOW FROM CURRENT_DATE + 1) = 7;
+
+  v_pending_charger uuid;
+  v_pending_start timestamptz;
+  v_pending_end timestamptz;
+  v_pending_cost numeric(10, 2);
 BEGIN
-  RAISE NOTICE 'Seeding PlugNear test data...';
+  RAISE NOTICE 'Seeding PlugNear demo data (1 host, 1 driver, 2 chargers, 2 bookings)...';
 
-  -- 1. Create or update test users in auth.users
-  -- Host 1
-  INSERT INTO auth.users (
-    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
-  ) VALUES (
-    v_host1_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'host1@plugnear.dev', v_encrypted_password, now(),
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"name":"Arun Host","role":"host","phone":"+91 98450 11111"}'::jsonb,
-    now(), now(), '', '', '', '', false
-  ) ON CONFLICT (id) DO UPDATE SET
-    email = EXCLUDED.email,
-    encrypted_password = v_encrypted_password,
-    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
+  -- ---------------------------------------------------------------------------
+  -- 1. Resolve or create the two demo accounts
+  -- ---------------------------------------------------------------------------
+  SELECT id INTO v_host_id FROM auth.users WHERE email = 'host@plugnear.dev';
+  IF v_host_id IS NULL THEN
+    INSERT INTO auth.users (
+      id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
+    ) VALUES (
+      gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+      'host@plugnear.dev', v_password, now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"name":"Manjunath Setty","role":"host","phone":"+91 98860 41235"}'::jsonb,
+      now(), now(), '', '', '', '', false
+    )
+    RETURNING id INTO v_host_id;
+  ELSE
+    UPDATE auth.users
+      SET encrypted_password = v_password,
+          email_confirmed_at = COALESCE(email_confirmed_at, now()),
+          raw_user_meta_data = '{"name":"Manjunath Setty","role":"host","phone":"+91 98860 41235"}'::jsonb
+    WHERE id = v_host_id;
+  END IF;
 
-  -- Host 2
-  INSERT INTO auth.users (
-    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
-  ) VALUES (
-    v_host2_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'host2@plugnear.dev', v_encrypted_password, now(),
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"name":"Priya Host","role":"host","phone":"+91 98450 22222"}'::jsonb,
-    now(), now(), '', '', '', '', false
-  ) ON CONFLICT (id) DO UPDATE SET
-    email = EXCLUDED.email,
-    encrypted_password = v_encrypted_password,
-    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
+  SELECT id INTO v_driver_id FROM auth.users WHERE email = 'driver@plugnear.dev';
+  IF v_driver_id IS NULL THEN
+    INSERT INTO auth.users (
+      id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
+    ) VALUES (
+      gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+      'driver@plugnear.dev', v_password, now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"name":"Nithya Rao","role":"driver","phone":"+91 99001 27654"}'::jsonb,
+      now(), now(), '', '', '', '', false
+    )
+    RETURNING id INTO v_driver_id;
+  ELSE
+    UPDATE auth.users
+      SET encrypted_password = v_password,
+          email_confirmed_at = COALESCE(email_confirmed_at, now()),
+          raw_user_meta_data = '{"name":"Nithya Rao","role":"driver","phone":"+91 99001 27654"}'::jsonb
+    WHERE id = v_driver_id;
+  END IF;
 
-  -- Driver 1
-  INSERT INTO auth.users (
-    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
-  ) VALUES (
-    v_driver1_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'driver1@plugnear.dev', v_encrypted_password, now(),
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"name":"Vikram Driver","role":"driver","phone":"+91 98450 33333"}'::jsonb,
-    now(), now(), '', '', '', '', false
-  ) ON CONFLICT (id) DO UPDATE SET
-    email = EXCLUDED.email,
-    encrypted_password = v_encrypted_password,
-    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
-
-  -- Driver 2
-  INSERT INTO auth.users (
-    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
-  ) VALUES (
-    v_driver2_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'driver2@plugnear.dev', v_encrypted_password, now(),
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"name":"Ananya Driver","role":"driver","phone":"+91 98450 44444"}'::jsonb,
-    now(), now(), '', '', '', '', false
-  ) ON CONFLICT (id) DO UPDATE SET
-    email = EXCLUDED.email,
-    encrypted_password = v_encrypted_password,
-    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
-
-  -- 2. Insert or update corresponding identities in auth.identities
+  -- Email identities (GoTrue needs these for password logins)
   INSERT INTO auth.identities (
     id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-  ) VALUES
-    (v_host1_id, v_host1_id, jsonb_build_object('sub', v_host1_id::text, 'email', 'host1@plugnear.dev'), 'email', 'host1@plugnear.dev', now(), now(), now()),
-    (v_host2_id, v_host2_id, jsonb_build_object('sub', v_host2_id::text, 'email', 'host2@plugnear.dev'), 'email', 'host2@plugnear.dev', now(), now(), now()),
-    (v_driver1_id, v_driver1_id, jsonb_build_object('sub', v_driver1_id::text, 'email', 'driver1@plugnear.dev'), 'email', 'driver1@plugnear.dev', now(), now(), now()),
-    (v_driver2_id, v_driver2_id, jsonb_build_object('sub', v_driver2_id::text, 'email', 'driver2@plugnear.dev'), 'email', 'driver2@plugnear.dev', now(), now(), now())
-  ON CONFLICT (provider, provider_id) DO UPDATE SET
-    identity_data = EXCLUDED.identity_data,
-    updated_at = now();
+  )
+  SELECT gen_random_uuid(), u.id,
+         jsonb_build_object('sub', u.id::text, 'email', u.email),
+         'email', u.email, now(), now(), now()
+  FROM auth.users u
+  WHERE u.id IN (v_host_id, v_driver_id)
+    AND NOT EXISTS (SELECT 1 FROM auth.identities i WHERE i.provider = 'email' AND i.provider_id = u.email);
 
-  -- 3. Upsert Profiles
-  INSERT INTO public.profiles (id, name, role, phone)
-  VALUES
-    (v_host1_id, 'Arun Host', 'host', '+91 98450 11111'),
-    (v_host2_id, 'Priya Host', 'host', '+91 98450 22222'),
-    (v_driver1_id, 'Vikram Driver', 'driver', '+91 98450 33333'),
-    (v_driver2_id, 'Ananya Driver', 'driver', '+91 98450 44444')
+  -- ---------------------------------------------------------------------------
+  -- 2. Profiles (the auth trigger normally does this; upsert keeps it idempotent)
+  -- ---------------------------------------------------------------------------
+  INSERT INTO public.profiles (id, name, role, phone) VALUES
+    (v_host_id, 'Manjunath Setty', 'host', '+91 98860 41235'),
+    (v_driver_id, 'Nithya Rao', 'driver', '+91 99001 27654')
   ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     phone = EXCLUDED.phone;
 
-  -- 3. Clear existing seeded test chargers & dependent rows to keep seed repeatable
+  -- ---------------------------------------------------------------------------
+  -- 3. Retire the older, bulkier demo dataset
+  -- ---------------------------------------------------------------------------
   DELETE FROM public.chargers WHERE id IN (
-    v_charger1_id, v_charger2_id, v_charger3_id, v_charger4_id, v_charger5_id
+    'a3333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'a4444444-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'a5555555-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   );
 
-  -- 4. Seed 5 Chargers in Indiranagar, Bengaluru
+  DELETE FROM public.bookings WHERE charger_id IN (v_charger_home, v_charger_store);
+  DELETE FROM public.availability_windows WHERE charger_id IN (v_charger_home, v_charger_store);
+
+  -- ---------------------------------------------------------------------------
+  -- 4. Two chargers, both owned by the same host
+  -- ---------------------------------------------------------------------------
   INSERT INTO public.chargers (
     id, host_id, title, address_text, latitude, longitude,
     connector_type, power_kw, price_per_hour, notes,
     host_connection_type, is_active, electricity_permission_acknowledged
   ) VALUES
     (
-      v_charger1_id, v_host1_id,
-      '100ft Road Fast Hub',
-      'Plot 42, 100 Feet Rd, HAL 2nd Stage, Indiranagar, Bengaluru 560038',
-      12.9719, 77.6412,
-      'CCS2', 22.0, 180.00,
-      'Prime commercial spot near 100ft Rd junction. Cafe accessible during charging.',
-      'commercial', true, true
-    ),
-    (
-      v_charger2_id, v_host1_id,
-      'Indiranagar Residential Home Plug',
-      'No. 8, 12th Main Rd, HAL 2nd Stage, Indiranagar, Bengaluru 560038',
-      12.9698, 77.6385,
-      'Type 2', 7.4, 120.00,
-      'Quiet driveway parking. Suitable for overnight and daytime charging.',
+      v_charger_home, v_host_id,
+      'Home Bay Charger - Indiranagar 1st Stage',
+      'No. 24, 4th Cross Rd, Indiranagar 1st Stage, Bengaluru, Karnataka 560038',
+      12.9755, 77.6395,
+      'Type 2', 7.4, 85.00,
+      'Covered ground-floor bay behind the main gate with a 6 m tethered Type 2 cable. Ring the intercom for Manjunath - the socket breaker is the third switch in the meter box by the door. Slow but dependable; good for topping up while you are at work or overnight.',
       'domestic', true, true
     ),
     (
-      v_charger3_id, v_host2_id,
-      'Defence Colony Dedicated EV Port',
-      '6th Cross Rd, Defence Colony, Indiranagar, Bengaluru 560038',
-      12.9760, 77.6440,
-      'Type 2', 11.0, 140.00,
-      'Dedicated metered EV line. Covered parking with security camera.',
-      'dedicated_ev', true, true
-    ),
-    (
-      v_charger4_id, v_host2_id,
-      'Double Road Commercial AC',
-      'Commercial Complex, Old Airport Rd, Indiranagar, Bengaluru 560008',
-      12.9635, 77.6480,
-      'Bharat AC-001', 3.3, 80.00,
-      'Economical slow charger, ideal for 2-wheelers and fleet EVs.',
+      v_charger_store, v_host_id,
+      'Store Fast Point - 100 Feet Road',
+      'Shop No. 7, 100 Feet Rd, near Trinity Metro, Indiranagar, Bengaluru, Karnataka 560008',
+      12.9784, 77.6403,
+      'CCS2', 30.0, 190.00,
+      'Customer parking bay behind the store shutter on a commercial meter. Open whenever the shop is, closed Sundays. Ask for the charging bay at the counter - staff will walk you through, and coffee is available next door while you wait.',
       'commercial', true, true
+    )
+  ON CONFLICT (id) DO UPDATE SET
+    host_id = EXCLUDED.host_id,
+    title = EXCLUDED.title,
+    address_text = EXCLUDED.address_text,
+    latitude = EXCLUDED.latitude,
+    longitude = EXCLUDED.longitude,
+    connector_type = EXCLUDED.connector_type,
+    power_kw = EXCLUDED.power_kw,
+    price_per_hour = EXCLUDED.price_per_hour,
+    notes = EXCLUDED.notes,
+    host_connection_type = EXCLUDED.host_connection_type,
+    is_active = EXCLUDED.is_active,
+    electricity_permission_acknowledged = true;
+
+  -- ---------------------------------------------------------------------------
+  -- 5. Weekly availability (day_of_week: 0 = Sunday)
+  --    Home: weekday mornings before work and evenings, all day at weekends.
+  --    Store: shop hours, closed Sunday.
+  -- ---------------------------------------------------------------------------
+  INSERT INTO public.availability_windows (charger_id, day_of_week, start_time, end_time)
+  SELECT v_charger_home, 0, '06:00'::time, '22:30'::time
+  UNION ALL SELECT v_charger_home, 1, '06:00', '10:00'
+  UNION ALL SELECT v_charger_home, 1, '17:00', '22:30'
+  UNION ALL SELECT v_charger_home, 2, '06:00', '10:00'
+  UNION ALL SELECT v_charger_home, 2, '17:00', '22:30'
+  UNION ALL SELECT v_charger_home, 3, '06:00', '10:00'
+  UNION ALL SELECT v_charger_home, 3, '17:00', '22:30'
+  UNION ALL SELECT v_charger_home, 4, '06:00', '10:00'
+  UNION ALL SELECT v_charger_home, 4, '17:00', '22:30'
+  UNION ALL SELECT v_charger_home, 5, '06:00', '10:00'
+  UNION ALL SELECT v_charger_home, 5, '17:00', '22:30'
+  UNION ALL SELECT v_charger_home, 6, '06:00', '12:00'
+  UNION ALL SELECT v_charger_home, 6, '16:00', '22:30'
+  UNION ALL SELECT v_charger_store, 1, '08:00', '20:00'
+  UNION ALL SELECT v_charger_store, 2, '08:00', '20:00'
+  UNION ALL SELECT v_charger_store, 3, '08:00', '20:00'
+  UNION ALL SELECT v_charger_store, 4, '08:00', '20:00'
+  UNION ALL SELECT v_charger_store, 5, '08:00', '20:00'
+  UNION ALL SELECT v_charger_store, 6, '08:00', '20:00';
+
+  -- ---------------------------------------------------------------------------
+  -- 6. Two bookings: one already confirmed, one waiting on the host.
+  --    Both are placed inside a real availability window for tomorrow's weekday,
+  --    and they do not overlap, so approving the pending one always succeeds.
+  -- ---------------------------------------------------------------------------
+  IF v_tomorrow_is_sunday THEN
+    v_pending_charger := v_charger_home;
+    v_pending_start := (v_tomorrow || ' 20:00:00+05:30')::timestamptz;
+    v_pending_end := (v_tomorrow || ' 21:00:00+05:30')::timestamptz;
+    v_pending_cost := 85.00;
+  ELSE
+    v_pending_charger := v_charger_store;
+    v_pending_start := (v_tomorrow || ' 11:00:00+05:30')::timestamptz;
+    v_pending_end := (v_tomorrow || ' 12:30:00+05:30')::timestamptz;
+    v_pending_cost := 285.00; -- 1.5 h x 190
+  END IF;
+
+  INSERT INTO public.bookings (
+    id, charger_id, driver_id, start_at, end_at, status, total_cost, decided_at
+  ) VALUES
+    (
+      'b1111111-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      v_charger_home, v_driver_id,
+      (v_tomorrow || ' 18:00:00+05:30')::timestamptz,
+      (v_tomorrow || ' 19:30:00+05:30')::timestamptz,
+      'confirmed', 127.50, now()  -- 1.5 h x 85
     ),
     (
-      v_charger5_id, v_host1_id,
-      'CMH Road DC Fast Station (Under Maintenance)',
-      'CMH Road, Indiranagar, Bengaluru 560038',
-      12.9782, 77.6390,
-      'CCS2', 30.0, 220.00,
-      'Currently inactive for firmware calibration.',
-      'commercial', false, true
+      'b2222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      v_pending_charger, v_driver_id,
+      v_pending_start, v_pending_end,
+      'requested', v_pending_cost
     );
 
-  -- 5. Seed Weekly Availability Windows (Days 0=Sun to 6=Sat)
-  -- Charger 1 (100ft Rd): Available Monday to Saturday from 08:00 to 22:00
-  INSERT INTO public.availability_windows (charger_id, day_of_week, start_time, end_time)
-  SELECT v_charger1_id, day, '08:00'::time, '22:00'::time
-  FROM generate_series(1, 6) AS day;
-
-  -- Charger 2 (Residential): Available Everyday from 07:00 to 23:00
-  INSERT INTO public.availability_windows (charger_id, day_of_week, start_time, end_time)
-  SELECT v_charger2_id, day, '07:00'::time, '23:00'::time
-  FROM generate_series(0, 6) AS day;
-
-  -- Charger 3 (Defence Colony): Available Everyday, split into morning and evening windows
-  INSERT INTO public.availability_windows (charger_id, day_of_week, start_time, end_time)
-  SELECT v_charger3_id, day, '06:00'::time, '12:00'::time
-  FROM generate_series(0, 6) AS day;
-
-  INSERT INTO public.availability_windows (charger_id, day_of_week, start_time, end_time)
-  SELECT v_charger3_id, day, '16:00'::time, '22:00'::time
-  FROM generate_series(0, 6) AS day;
-
-  -- Charger 4 (Double Road): Available Monday to Friday from 09:00 to 18:00
-  INSERT INTO public.availability_windows (charger_id, day_of_week, start_time, end_time)
-  SELECT v_charger4_id, day, '09:00'::time, '18:00'::time
-  FROM generate_series(1, 5) AS day;
-
-  -- 6. Seed Test Bookings for Conflict & Overlap Testing (on Charger 1)
-  -- A. Confirmed booking for Driver 1: Tomorrow 10:00 to 11:30 UTC
-  INSERT INTO public.bookings (
-    charger_id, driver_id, start_at, end_at, status, total_cost, decided_at
-  ) VALUES (
-    v_charger1_id, v_driver1_id,
-    (v_tomorrow || ' 10:00:00+00')::timestamptz,
-    (v_tomorrow || ' 11:30:00+00')::timestamptz,
-    'confirmed', 270.00, now()
-  );
-
-  -- B. Back-to-back Confirmed booking for Driver 2: Tomorrow 11:30 to 13:00 UTC
-  -- Verifies back-to-back scheduling works without exclusion conflict
-  INSERT INTO public.bookings (
-    charger_id, driver_id, start_at, end_at, status, total_cost, decided_at
-  ) VALUES (
-    v_charger1_id, v_driver2_id,
-    (v_tomorrow || ' 11:30:00+00')::timestamptz,
-    (v_tomorrow || ' 13:00:00+00')::timestamptz,
-    'confirmed', 270.00, now()
-  );
-
-  -- C. Pending Requested booking for Driver 2: Tomorrow 10:30 to 12:00 UTC
-  -- Overlaps with confirmed booking A (10:00-11:30); used to test approval auto-decline
-  INSERT INTO public.bookings (
-    charger_id, driver_id, start_at, end_at, status, total_cost
-  ) VALUES (
-    v_charger1_id, v_driver2_id,
-    (v_tomorrow || ' 10:30:00+00')::timestamptz,
-    (v_tomorrow || ' 12:00:00+00')::timestamptz,
-    'requested', 270.00
-  );
-
-  -- D. Pending Requested non-conflicting booking: Tomorrow 14:00 to 16:00 UTC
-  INSERT INTO public.bookings (
-    charger_id, driver_id, start_at, end_at, status, total_cost
-  ) VALUES (
-    v_charger1_id, v_driver1_id,
-    (v_tomorrow || ' 14:00:00+00')::timestamptz,
-    (v_tomorrow || ' 16:00:00+00')::timestamptz,
-    'requested', 360.00
-  );
-
-  RAISE NOTICE 'PlugNear seed data populated successfully!';
+  RAISE NOTICE 'Seed complete. Log in as host@plugnear.dev or driver@plugnear.dev (password: Password123!)';
 END $$;

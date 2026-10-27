@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { PlugZap } from "lucide-react";
 import { requireRole } from "@/lib/auth/guard";
 import { Navbar } from "@/components/Navbar";
 import { loadChargerDetails } from "@/lib/bookings/charger-loader";
+import { ChargerDetailsQuerySchema } from "@/lib/validation/booking";
 import ChargerDetailsView from "@/components/booking/ChargerDetailsView";
 
 interface ChargerDetailsPageProps {
@@ -17,9 +19,18 @@ export default async function ChargerDetailsPage({
   const { id } = await params;
   const sParams = await searchParams;
 
-  const startAt = typeof sParams.startAt === "string" ? sParams.startAt : undefined;
-  const endAt = typeof sParams.endAt === "string" ? sParams.endAt : undefined;
-  const isEmergency = sParams.isEmergency === "true";
+  // Validate the query string on the server like every other input (spec §9).
+  // An unparseable slot is dropped rather than trusted; a malformed timestamp
+  // reaching the loader would otherwise surface as an invalid Date.
+  const query = ChargerDetailsQuerySchema.safeParse({
+    startAt: typeof sParams.startAt === "string" ? sParams.startAt : undefined,
+    endAt: typeof sParams.endAt === "string" ? sParams.endAt : undefined,
+    isEmergency: typeof sParams.isEmergency === "string" ? sParams.isEmergency : undefined,
+  });
+
+  const startAt = query.success ? query.data.startAt : undefined;
+  const endAt = query.success ? query.data.endAt : undefined;
+  const isEmergency = query.success ? query.data.isEmergency : false;
 
   const loadResult = await loadChargerDetails(
     id,
@@ -39,7 +50,7 @@ export default async function ChargerDetailsPage({
 
         <main className="flex-1 mx-auto max-w-3xl px-4 py-16 sm:px-6 w-full text-center">
           <div className="rounded-3xl bg-white p-8 sm:p-12 border border-slate-200 shadow-sm space-y-4">
-            <div className="text-4xl">🔌</div>
+            <PlugZap className="h-8 w-8 text-slate-300" strokeWidth={1.5} aria-hidden />
             <h1 className="text-xl sm:text-2xl font-black text-slate-900">
               Charging Point Not Found
             </h1>

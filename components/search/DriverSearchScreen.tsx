@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { AlertTriangle, Loader2, MapPin, Zap } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { GeoPoint } from "@/lib/rules";
 import { validateSlot, toKolkataLocalDetails } from "@/lib/rules";
@@ -29,8 +30,20 @@ const ChargerMap = dynamic(() => import("@/components/map/ChargerMap"), {
   ),
 });
 
-export default function DriverSearchScreen() {
-  const defaults = getDefaultSearchDateTime();
+interface DriverSearchScreenProps {
+  /**
+   * Server render timestamp. The default slot is derived from it so the SSR
+   * markup and the hydration pass compute the same 30-minute slot instead of
+   * disagreeing when the page loads near a boundary.
+   */
+  initialNowIso: string;
+}
+
+export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreenProps) {
+  const defaults = useMemo(
+    () => getDefaultSearchDateTime(new Date(initialNowIso)),
+    [initialNowIso]
+  );
 
   // Search filter state
   const [location, setLocation] = useState<GeoPoint>(DEFAULT_MAP_CENTER);
@@ -61,6 +74,42 @@ export default function DriverSearchScreen() {
 
   // Counter to discard stale out-of-order responses
   const activeRequestId = useRef<number>(0);
+  // Signature of the filters the results were produced from, so edits after a
+  // search can be flagged instead of firing a request per keystroke.
+  const searchedSignature = useRef<string | null>(null);
+  const startedInitialSearch = useRef(false);
+
+  // The slot the list and map were last produced from. Cleared filters (an
+  // emptied date input) must not reach kolkataInputsToUtcSlot during render.
+  const currentSlot = useMemo(() => {
+    if (isEmergencyMode && emergencySlot) {
+      return { startAt: emergencySlot.startAt, endAt: emergencySlot.endAt };
+    }
+    try {
+      return kolkataInputsToUtcSlot({ date, startTime, durationMinutes });
+    } catch {
+      return null;
+    }
+  }, [isEmergencyMode, emergencySlot, date, startTime, durationMinutes]);
+
+  const filterSignature = useMemo(
+    () =>
+      [
+        location.latitude.toFixed(6),
+        location.longitude.toFixed(6),
+        radiusKm,
+        date,
+        startTime,
+        durationMinutes,
+        connectorType,
+      ].join("|"),
+    [location, radiusKm, date, startTime, durationMinutes, connectorType]
+  );
+
+  const filtersAreStale =
+    !isEmergencyMode &&
+    searchedSignature.current !== null &&
+    searchedSignature.current !== filterSignature;
 
   // 1. Standard Scheduled Search
   const executeSearch = useCallback(async () => {
@@ -90,6 +139,7 @@ export default function DriverSearchScreen() {
     }
 
     const currentRequestId = ++activeRequestId.current;
+    searchedSignature.current = filterSignature;
     setIsLoading(true);
 
     try {
@@ -144,7 +194,7 @@ export default function DriverSearchScreen() {
         hint: "Could not reach the search service. Please check your network and try again.",
       });
     }
-  }, [location, radiusKm, date, startTime, durationMinutes, connectorType]);
+  }, [location, radiusKm, date, startTime, durationMinutes, connectorType, filterSignature]);
 
   // 2. Emergency Mode Execution (Calls GET /api/chargers/emergency)
   const executeEmergencySearch = useCallback(
@@ -155,6 +205,7 @@ export default function DriverSearchScreen() {
       setGeoErrorMessage(null);
 
       const currentRequestId = ++activeRequestId.current;
+      searchedSignature.current = null;
       setIsEmergencyLoading(true);
       setIsLoading(true);
 
@@ -264,10 +315,15 @@ export default function DriverSearchScreen() {
     );
   }, [executeEmergencySearch]);
 
-  // Initial search on mount
+  // Run exactly one search on mount. After that, filter edits wait for an
+  // explicit Search press: re-firing on every keystroke or map tap hammered the
+  // API and made the Search button meaningless.
   useEffect(() => {
-    executeSearch();
-  }, [executeSearch]);
+    if (startedInitialSearch.current) return;
+    startedInitialSearch.current = true;
+    void executeSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const emptyMsg = meta ? getEmptyStateMessage(meta, isEmergencyMode ? 25 : radiusKm, isEmergencyMode) : null;
 
@@ -303,12 +359,12 @@ export default function DriverSearchScreen() {
             >
               {isEmergencyLoading ? (
                 <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   <span>Finding nearest charger...</span>
                 </>
               ) : (
                 <>
-                  <span className="text-base">⚡</span>
+                  <Zap className="h-4 w-4" strokeWidth={2.5} aria-hidden />
                   <span>I need a charge now</span>
                 </>
               )}
@@ -330,7 +386,7 @@ export default function DriverSearchScreen() {
         {geoFallbackPrompt && (
           <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50/80 p-4 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
             <div className="space-y-0.5">
-              <p className="font-bold">📍 {geoErrorMessage}</p>
+              <p className="font-bold inline-flex items-start gap-1.5"><MapPin className="mt-px h-4 w-4 shrink-0" aria-hidden /> {geoErrorMessage}</p>
               <p className="text-amber-800">
                 You can tap anywhere on the map to pin your location, then search from that exact point.
               </p>
@@ -351,7 +407,7 @@ export default function DriverSearchScreen() {
         {isEmergencyMode && emergencySlot && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs text-emerald-900">
             <div className="flex items-center gap-2">
-              <span className="font-bold">⚡ Emergency slot active:</span>
+              <span className="font-bold inline-flex items-center gap-1.5"><Zap className="h-4 w-4" strokeWidth={2.25} aria-hidden /> Emergency slot active:</span>
               <span>
                 {toKolkataLocalDetails(emergencySlot.startAt).timeString} –{" "}
                 {toKolkataLocalDetails(emergencySlot.endAt).timeString} IST ({emergencySlot.durationMinutes} mins)
@@ -379,7 +435,7 @@ export default function DriverSearchScreen() {
 
         {hasSearched && meta && (
           <div className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-1.5 text-xs text-slate-700 font-semibold border border-slate-200">
-            <span>⚡ {meta.availableCount} available</span>
+            <span className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden /> {meta.availableCount} available</span>
             <span>&bull;</span>
             <span className="text-slate-500">{meta.totalInRadius} nearby</span>
           </div>
@@ -410,6 +466,8 @@ export default function DriverSearchScreen() {
             onSearch={executeSearch}
             isLoading={isLoading}
             validationError={validationError}
+            geoError={geoErrorMessage}
+            filtersAreStale={filtersAreStale}
           />
 
           {/* Results List or State Banners */}
@@ -431,7 +489,9 @@ export default function DriverSearchScreen() {
               )}
             </div>
 
-            {searchError ? (
+            {isLoading ? (
+              <ResultsSkeleton count={3} />
+            ) : searchError ? (
               <SearchStateBanner
                 type="error"
                 title={searchError.title}
@@ -444,6 +504,12 @@ export default function DriverSearchScreen() {
                 title="Ready to search"
                 hint="Set your location on the map and choose a time slot to see available chargers."
               />
+            ) : currentSlot === null ? (
+              <SearchStateBanner
+                type="error"
+                title="Check the date and time"
+                hint="A complete date and a start time are both needed before PlugNear can look for a free slot."
+              />
             ) : hasSearched && chargers.length === 0 && emptyMsg ? (
               <SearchStateBanner
                 type="empty"
@@ -454,12 +520,13 @@ export default function DriverSearchScreen() {
               <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
                 {chargers.map((charger, index) => {
                   const isNearest = index === 0 && isEmergencyMode;
-                  const currentSlot = isEmergencyMode
-                    ? emergencySlot
-                    : kolkataInputsToUtcSlot({ date, startTime, durationMinutes });
 
                   return (
-                    <div key={charger.id} className="space-y-3">
+                    <div
+                      key={charger.id}
+                      className="space-y-3 plugnear-rise"
+                      style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
+                    >
                       {index === 1 && isEmergencyMode && (
                         <div className="pt-2 border-t border-slate-200">
                           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
@@ -499,6 +566,38 @@ export default function DriverSearchScreen() {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Placeholder cards shown while a search is in flight, so the results column
+ * keeps its shape instead of collapsing and re-expanding.
+ */
+function ResultsSkeleton({ count }: { count: number }) {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-label="Searching for chargers">
+      {Array.from({ length: count }).map((_, index) => (
+        <div
+          key={index}
+          className="plugnear-shimmer rounded-2xl border border-slate-200 bg-white p-4"
+          style={{ animationDelay: `${index * 120}ms` }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 space-y-2">
+              <div className="h-3.5 w-2/3 rounded-full bg-slate-200" />
+              <div className="h-2.5 w-1/3 rounded-full bg-slate-100" />
+            </div>
+            <div className="h-8 w-16 rounded-xl bg-slate-100" />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="h-8 rounded-lg bg-slate-100" />
+            <div className="h-8 rounded-lg bg-slate-100" />
+            <div className="h-8 rounded-lg bg-slate-100" />
+          </div>
+          <div className="mt-4 h-10 rounded-xl bg-slate-100" />
+        </div>
+      ))}
     </div>
   );
 }

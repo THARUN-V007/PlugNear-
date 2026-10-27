@@ -13,6 +13,7 @@ import {
 import {
   buildBookingRecord,
   checkForDuplicateBooking,
+  checkDriverCalendarConflict,
   mapBookingRuleError,
 } from "@/lib/bookings/booking-helpers";
 
@@ -249,6 +250,60 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check 5: this driver cannot already be confirmed somewhere else at this time.
+    // The DB exclusion constraint is per-charger, so it would not catch this.
+    const { data: driverConfirmedRows, error: driverConfirmedError } = await adminClient
+      .from("bookings")
+      .select("id, charger_id, driver_id, start_at, end_at, status")
+      .eq("driver_id", user.id)
+      .eq("status", "confirmed")
+      .neq("charger_id", charger.id)
+      .lt("start_at", slot.endAt)
+      .gt("end_at", slot.startAt);
+
+    if (driverConfirmedError) {
+      console.error("[POST /api/bookings] Driver calendar query error:", driverConfirmedError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "DATABASE_ERROR",
+            message: "Could not check your existing bookings. Please try again.",
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    const calendarConflict = checkDriverCalendarConflict(
+      user.id,
+      slot,
+      (driverConfirmedRows || []).map((b) => ({
+        id: b.id,
+        chargerId: b.charger_id,
+        driverId: b.driver_id,
+        startAt: new Date(b.start_at),
+        endAt: new Date(b.end_at),
+        status: b.status,
+      }))
+    );
+
+    if (!calendarConflict.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: calendarConflict.error.code,
+            message: mapBookingRuleError(
+              calendarConflict.error.code,
+              calendarConflict.error.message
+            ),
+          },
+        },
+        { status: 409 }
+      );
+    }
+
     // 7. Compute cost server-side and build booking record
     const builtRecordResult = buildBookingRecord({
       driverId: user.id, // Strictly from session, never from body
@@ -293,6 +348,19 @@ export async function POST(request: Request) {
 
     if (!insertError) {
       newBooking = driverInsertData;
+    } else if (insertError.code === "23505") {
+      // Partial unique index one_active_request_per_driver_slot: the same driver
+      // submitted an identical request twice (double click or a retried fetch).
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "DUPLICATE_BOOKING",
+            message: mapBookingRuleError("DUPLICATE_BOOKING"),
+          },
+        },
+        { status: 409 }
+      );
     } else if (
       insertError.code === "23P01" ||
       insertError.message?.includes("no_overlapping_confirmed_bookings")
@@ -307,9 +375,24 @@ export async function POST(request: Request) {
         },
         { status: 409 }
       );
+    } else if (insertError.code !== "42P17") {
+      // Any other failure (RLS denial, constraint, transport) is final. Retrying with
+      // the service-role client would write the row while bypassing the RLS layer that
+      // is supposed to act as the second line of defence.
+      console.error("[POST /api/bookings] Insert rejected:", insertError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "BOOKING_REJECTED",
+            message: "Could not record your booking request. Please try again.",
+          },
+        },
+        { status: 500 }
+      );
     } else {
-      // If RLS recursion (42P17) or policy recursion occurs before migration 20261027000002
-      // is applied in SQL Editor, complete the insertion via adminClient
+      // 42P17 is infinite RLS recursion, which only happens before migration
+      // 20261027000002 is applied. Finish the insert with the admin client in that case.
       const { data: adminInsertData, error: adminInsertError } = await adminClient
         .from("bookings")
         .insert({

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { requireRole } from "@/lib/auth/guard";
 import { Navbar } from "@/components/Navbar";
 import { loadDriverBookings } from "@/lib/bookings/driver-bookings-loader";
@@ -16,7 +17,7 @@ export default async function DriverBookingsPage() {
 
         <main className="flex-1 mx-auto max-w-3xl px-4 py-16 sm:px-6 w-full text-center">
           <div className="rounded-3xl bg-white p-8 sm:p-12 border border-slate-200 shadow-sm space-y-4">
-            <div className="text-4xl">⚠️</div>
+            <AlertTriangle className="h-8 w-8 text-slate-300" strokeWidth={1.5} aria-hidden />
             <h1 className="text-xl sm:text-2xl font-black text-slate-900">
               Could Not Load Bookings
             </h1>
@@ -50,7 +51,10 @@ export default async function DriverBookingsPage() {
       <Navbar profile={profile} email={user.email} />
 
       <main className="flex-1 mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 w-full">
-        <DriverBookingsView initialBookings={bookings} />
+        <DriverBookingsView
+          initialBookings={bookings}
+          serverNow={new Date().toISOString()}
+        />
       </main>
     </div>
   );

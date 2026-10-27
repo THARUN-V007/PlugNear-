@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CheckCircle2, PlugZap, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { HostChargerListItem } from "@/lib/chargers/host-chargers-helpers";
@@ -39,8 +40,8 @@ export default function HostChargersView({
       {/* 1. Header with "Add New Charger" Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 border border-purple-200">
-            ⚡ Charging Points Management
+          <div className="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700 border border-cyan-200">
+            <Zap className="h-4 w-4" strokeWidth={2.25} aria-hidden /> Charging Points Management
           </div>
           <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             My Charging Points
@@ -52,7 +53,7 @@ export default function HostChargersView({
 
         <Link
           href="/host/chargers/new"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 self-start sm:self-auto"
         >
           <span>＋</span> Add New Charger
         </Link>
@@ -62,7 +63,7 @@ export default function HostChargersView({
       {showSavedBanner && (
         <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs font-semibold text-emerald-900 flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2">
-            <span className="text-base">✅</span>
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" strokeWidth={2} aria-hidden />
             <span>Charging point saved successfully!</span>
           </div>
           <button
@@ -70,7 +71,7 @@ export default function HostChargersView({
             onClick={() => setShowSavedBanner(false)}
             className="text-emerald-700 hover:text-emerald-900 font-bold"
           >
-            ✕
+            <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
           </button>
         </div>
       )}
@@ -82,14 +83,14 @@ export default function HostChargersView({
           onClick={() => setFilter("all")}
           className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
             filter === "all"
-              ? "bg-purple-600 text-white shadow-xs"
+              ? "bg-cyan-600 text-white shadow-xs"
               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
         >
           <span>All Chargers</span>
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-              filter === "all" ? "bg-purple-700 text-white" : "bg-slate-200 text-slate-700"
+              filter === "all" ? "bg-cyan-700 text-white" : "bg-slate-200 text-slate-700"
             }`}
           >
             {initialChargers.length}
@@ -105,7 +106,7 @@ export default function HostChargersView({
               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
         >
-          <span>⚡ Active</span>
+          <span className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden /> Active</span>
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
               filter === "active" ? "bg-emerald-700 text-white" : "bg-emerald-200 text-emerald-900"
@@ -138,8 +139,8 @@ export default function HostChargersView({
       {/* 3. Chargers Grid or Empty State */}
       {filteredChargers.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-50 text-2xl text-purple-700">
-            🔌
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-50 text-2xl text-cyan-700">
+            <PlugZap className="h-7 w-7" strokeWidth={1.5} aria-hidden />
           </div>
           <h3 className="mt-4 text-base font-bold text-slate-900">
             {filter === "all"
@@ -158,7 +159,7 @@ export default function HostChargersView({
           {filter === "all" && (
             <Link
               href="/host/chargers/new"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-purple-700"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-cyan-700"
             >
               <span>＋</span> List Your First Charger
             </Link>

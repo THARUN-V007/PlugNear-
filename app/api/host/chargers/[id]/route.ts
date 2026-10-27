@@ -6,6 +6,7 @@ import {
   buildChargerUpdateRecord,
   mapChargerError,
 } from "@/lib/chargers/host-chargers-helpers";
+import { replaceChargerAvailabilityWindows } from "@/lib/chargers/availability-windows";
 
 interface ChargerRouteParams {
   params: Promise<{ id: string }>;
@@ -134,11 +135,24 @@ export async function PUT(request: Request, props: ChargerRouteParams) {
       );
     }
 
+    // 5. Replace the weekly availability schedule (atomic; rolls back on rejection)
+    const windowsResult = await replaceChargerAvailabilityWindows(
+      adminClient,
+      id,
+      parseResult.data.windows
+    );
+
+    if (!windowsResult.success) {
+      const status = windowsResult.error.code === "MIGRATION_MISSING" ? 500 : 400;
+      return NextResponse.json({ success: false, error: windowsResult.error }, { status });
+    }
+
     return NextResponse.json(
       {
         success: true,
         data: {
           charger: updatedRows,
+          windowsSaved: windowsResult.data,
         },
       },
       { status: 200 }

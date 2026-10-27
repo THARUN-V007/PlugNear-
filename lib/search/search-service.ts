@@ -147,6 +147,7 @@ export async function searchChargers(
     // 5. Run pure domain rules assembly, filtering, ranking, and privacy masking
     const payload = assembleSearchResults({
       candidates,
+      origin: { latitude: params.latitude, longitude: params.longitude },
       slot,
       validatedSlot: slotValidation.data,
       limit: params.limit,

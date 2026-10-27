@@ -74,6 +74,22 @@ describe("Rule 5 & 6: Booking State Machine & Lazy Refresh", () => {
       }
     });
 
+    it("refuses to cancel a requested booking whose start time already passed", () => {
+      // Rule 8.6: an undecided request past its start time is expired, not cancellable.
+      const result = transitionBooking({
+        booking: futureBooking,
+        newStatus: "cancelled",
+        actor: driverActor,
+        hostId,
+        now: duringSlot,
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe(ERROR_CODES.INVALID_TRANSITION);
+      }
+    });
+
     it("allows system to expire an undecided booking once start time has passed", () => {
       const result = transitionBooking({
         booking: futureBooking,

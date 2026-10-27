@@ -25,7 +25,7 @@ function createPickerPinIcon() {
     html: `
       <div style="position: relative; width: 36px; height: 36px; transform: translate(-50%, -100%);">
         <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50% 50% 50% 0; background: #9333ea; transform: rotate(-45deg); border: 2.5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
-          <span style="transform: rotate(45deg); color: white; font-size: 16px; font-weight: bold;">⚡</span>
+          <span style="transform: rotate(45deg); color: white; font-size: 16px; font-weight: bold;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
         </div>
       </div>
     `,
@@ -145,9 +145,9 @@ export default function LocationPickerMap({
           type="button"
           onClick={handleUseMyLocation}
           disabled={isLocating}
-          className="rounded-xl border border-slate-300 bg-white/95 backdrop-blur-xs px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 flex items-center gap-1.5"
+          className="rounded-xl border border-slate-300 bg-white/95 backdrop-blur-xs px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 flex items-center gap-1.5"
         >
-          <span>🎯</span>
+          <span aria-hidden>&bull;</span>
           {isLocating ? "Finding..." : "Use my location"}
         </button>
         {geoError && (
@@ -160,11 +160,11 @@ export default function LocationPickerMap({
       {/* 3. Bottom Coordinates Bar */}
       <div className="bg-slate-50 border-t border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
         <span className="font-semibold text-slate-700 flex items-center gap-1">
-          <span>📍</span> Click map or drag pin to position charger
+          Click the map or drag the pin to position the charger
         </span>
         <div className="font-mono text-[11px] bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 shadow-2xs">
-          Lat: <span className="font-bold text-purple-700">{effectiveLat.toFixed(5)}</span> | Lng:{" "}
-          <span className="font-bold text-purple-700">{effectiveLng.toFixed(5)}</span>
+          Lat: <span className="font-bold text-cyan-700">{effectiveLat.toFixed(5)}</span> | Lng:{" "}
+          <span className="font-bold text-cyan-700">{effectiveLng.toFixed(5)}</span>
         </div>
       </div>
     </div>

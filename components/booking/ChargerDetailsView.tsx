@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { AlertTriangle, Ban, Check, MapPin, Sparkles, Zap } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SafeChargerDetails, SlotPreValidation } from "@/lib/bookings/charger-loader";
+import { getGoogleMapsDirectionsUrl } from "@/lib/bookings/driver-bookings-helpers";
 import { toKolkataLocalDetails, type AvailabilityWindow } from "@/lib/rules";
 
 const ApproximateLocationMap = dynamic(
@@ -141,8 +143,8 @@ export default function ChargerDetailsView({
       {confirmedBooking ? (
         <div className="rounded-3xl border-2 border-emerald-500 bg-emerald-50/60 p-6 sm:p-8 shadow-md space-y-6 animate-in fade-in duration-300">
           <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
-              ✓
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md">
+              <Check className="h-6 w-6" strokeWidth={3} aria-hidden />
             </div>
             <div className="space-y-1">
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-900">
@@ -230,7 +232,7 @@ export default function ChargerDetailsView({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">
-                    ⚡ {charger.powerKw} kW
+                    <Zap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden /> {charger.powerKw} kW
                   </span>
                   <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 border border-slate-200">
                     {charger.connectorType}
@@ -263,20 +265,47 @@ export default function ChargerDetailsView({
                 )}
               </div>
 
-              {/* Approximate Map */}
+              {/* Location card: masked until a confirmed booking unlocks the exact address */}
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                    Approximate Location
+                    {charger.confirmedLocation ? "Exact Location (Unlocked)" : "Approximate Location"}
                   </h3>
                   <span className="text-[11px] text-slate-400">
-                    Privacy masked pin (~300m)
+                    {charger.confirmedLocation ? "Confirmed booking on this charger" : "Privacy masked pin (~300m)"}
                   </span>
                 </div>
+
+                {charger.confirmedLocation && (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                        <MapPin className="h-3.5 w-3.5" strokeWidth={2} aria-hidden /> Street address
+                      </span>
+                      <p className="text-xs font-bold text-slate-900">
+                        {charger.confirmedLocation.addressText}
+                      </p>
+                    </div>
+                    <a
+                      href={getGoogleMapsDirectionsUrl(
+                        charger.confirmedLocation.location.latitude,
+                        charger.confirmedLocation.location.longitude
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-emerald-600/30 active:scale-[0.98]"
+                    >
+                      Get Directions
+                      <span aria-hidden>&rarr;</span>
+                    </a>
+                  </div>
+                )}
 
                 <ApproximateLocationMap
                   approximateLocation={charger.approximateLocation}
                   chargerTitle={charger.title}
+                  unlockedLocation={charger.confirmedLocation?.location ?? null}
+                  unlockedAddress={charger.confirmedLocation?.addressText ?? null}
                 />
               </div>
             </div>
@@ -293,7 +322,7 @@ export default function ChargerDetailsView({
               {validation?.isEmergencyRefreshed && (
                 <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs text-emerald-900 space-y-1">
                   <p className="font-bold flex items-center gap-1.5">
-                    <span>⚡</span> Emergency Slot Refreshed
+                    <Zap className="h-4 w-4" strokeWidth={2} aria-hidden /> Emergency Slot Refreshed
                   </p>
                   <p className="text-slate-600">
                     Your slot was refreshed to start in 10 minutes so you have sufficient time to review and confirm.
@@ -304,7 +333,7 @@ export default function ChargerDetailsView({
               {validation?.isStale && (
                 <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 space-y-2">
                   <p className="font-bold flex items-center gap-1.5">
-                    <span>⚠️</span> Time Slot Expired
+                    <AlertTriangle className="h-4 w-4" strokeWidth={2} aria-hidden /> Time Slot Expired
                   </p>
                   <p className="text-slate-600">
                     The scheduled start time has already passed. Please return to search to select an upcoming slot.
@@ -321,7 +350,7 @@ export default function ChargerDetailsView({
               {!validation?.isBookable && !validation?.isStale && validation?.errorMessage && (
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800 space-y-2">
                   <p className="font-bold flex items-center gap-1.5">
-                    <span>⛔</span> Slot Unavailable
+                    <Ban className="h-4 w-4" strokeWidth={2} aria-hidden /> Slot Unavailable
                   </p>
                   <p>{validation.errorMessage}</p>
                   <Link

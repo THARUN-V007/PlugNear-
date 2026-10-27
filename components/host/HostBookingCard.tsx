@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle, Check, PlugZap, User, X, Zap } from "lucide-react";
 import {
   type HostBookingItem,
   getHostStatusBadgeDetails,
@@ -12,11 +13,13 @@ import {
 
 interface HostBookingCardProps {
   booking: HostBookingItem;
+  serverNow: string;
   onActionComplete?: () => void;
 }
 
 export default function HostBookingCard({
   booking,
+  serverNow,
   onActionComplete,
 }: HostBookingCardProps) {
   const [activeConfirm, setActiveConfirm] = useState<"approve" | "decline" | "cancel" | null>(null);
@@ -24,7 +27,7 @@ export default function HostBookingCard({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const badge = getHostStatusBadgeDetails(booking.status);
-  const now = new Date();
+  const now = new Date(serverNow);
   const canApprove = canHostApprove(booking, now);
   const canDecline = canHostDecline(booking);
   const canCancel = canHostCancel(booking, now);
@@ -98,11 +101,13 @@ export default function HostBookingCard({
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700 border border-slate-200">
-              🔌 {booking.connectorType}
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+              <PlugZap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              {booking.connectorType}
             </span>
-            <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-bold text-purple-800 border border-purple-200">
-              ⚡ {booking.powerKw} kW
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-bold text-cyan-800">
+              <Zap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              {booking.powerKw} kW
             </span>
             <span className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 border border-slate-200">
               ₹{booking.pricePerHour}/hr
@@ -120,8 +125,8 @@ export default function HostBookingCard({
             <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
             {badge.label}
           </span>
-          <span className="text-[11px] text-slate-400">
-            ID: <code className="font-mono">{booking.id.slice(0, 8)}</code>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-[11px] text-slate-500">
+            ID: <code>{booking.id.slice(0, 8)}</code>
           </span>
         </div>
       </div>
@@ -131,7 +136,7 @@ export default function HostBookingCard({
         <div>
           <span className="text-xs font-medium text-slate-500 block">Driver</span>
           <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
-            <span className="text-base">👤</span>
+            <User className="h-4 w-4 text-slate-400" strokeWidth={1.75} aria-hidden />
             {booking.driverName}
           </p>
         </div>
@@ -160,7 +165,7 @@ export default function HostBookingCard({
       {/* Error Banner */}
       {errorMsg && (
         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800 flex items-start gap-2">
-          <span className="text-base">⚠️</span>
+          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" strokeWidth={1.75} aria-hidden />
           <div className="flex-1">
             <p>{errorMsg}</p>
           </div>
@@ -169,7 +174,7 @@ export default function HostBookingCard({
             onClick={() => setErrorMsg(null)}
             className="text-rose-500 hover:text-rose-700 font-bold"
           >
-            ✕
+            <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
           </button>
         </div>
       )}
@@ -198,7 +203,7 @@ export default function HostBookingCard({
                         : "bg-slate-200 text-slate-400 cursor-not-allowed"
                     }`}
                   >
-                    <span>✓</span> Approve
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> Approve
                   </button>
                   <button
                     type="button"
@@ -210,7 +215,7 @@ export default function HostBookingCard({
                         : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
                     }`}
                   >
-                    <span>✕</span> Decline
+                    <X className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> Decline
                   </button>
                 </>
               ) : activeConfirm === "approve" ? (

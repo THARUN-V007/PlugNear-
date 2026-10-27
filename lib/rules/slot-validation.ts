@@ -58,31 +58,33 @@ export function validateSlot(
   }
 
   const durationMs = endMs - startMs;
-  const durationMinutes = Math.round(durationMs / (60 * 1000));
+  const stepMs = SLOT_STEP_MINUTES * 60 * 1000;
 
-  // 3. Minimum duration
-  if (durationMinutes < MIN_SLOT_DURATION_MINUTES) {
+  // All three checks work in exact milliseconds. Rounding to minutes first would
+  // let a 29.5-minute slot read as 30 and slip past the 30-minute step rule.
+  if (durationMs < MIN_SLOT_DURATION_MINUTES * 60 * 1000) {
     return err(
       ERROR_CODES.DURATION_TOO_SHORT,
       `Booking duration must be at least ${MIN_SLOT_DURATION_MINUTES} minutes.`
     );
   }
 
-  // 4. Maximum duration
-  if (durationMinutes > MAX_SLOT_DURATION_MINUTES) {
+  if (durationMs > MAX_SLOT_DURATION_MINUTES * 60 * 1000) {
     return err(
       ERROR_CODES.DURATION_TOO_LONG,
       `Booking duration cannot exceed ${MAX_SLOT_DURATION_MINUTES / 60} hours.`
     );
   }
 
-  // 5. Must be in 30-minute steps
-  if (durationMinutes % SLOT_STEP_MINUTES !== 0) {
+  // Duration must land on a whole number of 30-minute steps.
+  if (durationMs % stepMs !== 0) {
     return err(
       ERROR_CODES.INVALID_STEP,
       `Booking duration must be in increments of ${SLOT_STEP_MINUTES} minutes.`
     );
   }
+
+  const durationMinutes = durationMs / (60 * 1000);
 
   return ok({
     durationMinutes,

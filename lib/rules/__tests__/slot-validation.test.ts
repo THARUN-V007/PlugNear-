@@ -111,6 +111,27 @@ describe("Rule 1: Slot Validation", () => {
     }
   });
 
+  // Regression: the duration used to be Math.round()ed to minutes before the
+  // step check, so a 29.5-minute slot read as exactly 30 and passed every rule.
+  it.each([
+    ["29.5 minutes", "2026-11-01T10:29:30Z"],
+    ["30.5 minutes", "2026-11-01T10:30:30Z"],
+    ["30 minutes plus a second", "2026-11-01T10:30:01Z"],
+    ["61 minutes", "2026-11-01T11:01:00Z"],
+  ])("rejects a slot of %s with second-level precision", (_label, endAt) => {
+    const result = validateSlot(
+      { startAt: "2026-11-01T10:00:00Z", endAt },
+      fixedNow
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect([
+        ERROR_CODES.DURATION_TOO_SHORT,
+        ERROR_CODES.INVALID_STEP,
+      ]).toContain(result.error.code);
+    }
+  });
+
   it("rejects a slot that exceeds 8 hours", () => {
     const slot = {
       startAt: "2026-11-01T09:00:00Z",

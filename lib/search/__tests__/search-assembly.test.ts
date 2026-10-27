@@ -4,7 +4,7 @@ import {
   type RawCandidateCharger,
   type AssembleSearchInput,
 } from "../search-assembly";
-import type { ValidatedSlotDetails } from "@/lib/rules";
+import { calculateHaversineDistance, type ValidatedSlotDetails } from "@/lib/rules";
 
 describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
   // Sunday, 2026-11-01.
@@ -20,6 +20,9 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
     start: new Date("2026-11-01T10:00:00Z"),
     end: new Date("2026-11-01T11:30:00Z"),
   };
+
+  // The driver's search origin (the Indiranagar map centre used by the app).
+  const origin = { latitude: 12.9719, longitude: 77.6412 };
 
   // Base window open Sundays 08:00 to 22:00 IST (covers 15:30 to 17:00 IST)
   const baseWindows = [
@@ -86,6 +89,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [chargerOutsideWindow, candidate2],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 
@@ -116,6 +120,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [chargerWithOverlap, candidate2],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 
@@ -145,6 +150,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [chargerWithPending],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 
@@ -173,6 +179,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [chargerBackToBack],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 
@@ -185,6 +192,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [candidate1, candidate2, candidate3],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
       connectorFilter: "CCS2",
     };
@@ -196,24 +204,39 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
     expect(result.meta.totalInRadius).toBe(1); // Only 1 CCS2 charger matched
   });
 
-  it("sorts available chargers nearest first by distance", () => {
+  it("sorts available chargers nearest first by masked distance", () => {
     // Candidate order: candidate3 (2.5km), candidate1 (0.5km), candidate2 (1.2km)
     const input: AssembleSearchInput = {
       candidates: [candidate3, candidate1, candidate2],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 
     const result = assembleSearchResults(input);
-    expect(result.chargers.map((c) => c.id)).toEqual([
-      "charger-1", // 0.5 km
-      "charger-2", // 1.2 km
-      "charger-3", // 2.5 km
-    ]);
-    expect(result.chargers[0].distanceKm).toBe(0.5);
-    expect(result.chargers[1].distanceKm).toBe(1.2);
-    expect(result.chargers[2].distanceKm).toBe(2.5);
+    expect(result.chargers.length).toBe(3);
+
+    const published = result.chargers.map((c) => c.distanceKm);
+    expect([...published].sort((a, b) => a - b)).toEqual(published);
+  });
+
+  it("publishes a distance that agrees with the masked pin, not the true position", () => {
+    const input: AssembleSearchInput = {
+      candidates: [candidate1],
+      slot,
+      validatedSlot,
+      origin,
+      limit: 20,
+    };
+
+    const item = assembleSearchResults(input).chargers[0];
+    const maskedMeters = calculateHaversineDistance(origin, item.approximateLocation);
+    const expectedKm = Math.round((maskedMeters / 1000) * 10) / 10;
+
+    // The exact distance from SQL (0.5 km) must not be what we publish.
+    expect(item.distanceKm).toBe(expectedKm);
+    expect(item.distanceKm).not.toBe(candidate1.distanceMeters / 1000);
   });
 
   it("respects the requested pagination limit", () => {
@@ -221,6 +244,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [candidate1, candidate2, candidate3],
       slot,
       validatedSlot,
+      origin,
       limit: 2,
     };
 
@@ -234,6 +258,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [candidate1],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 
@@ -259,6 +284,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [candidate1],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 
@@ -299,6 +325,7 @@ describe("Search Assembly & Ranking (Pure Unit Tests)", () => {
       candidates: [blockedCandidate1, blockedCandidate2],
       slot,
       validatedSlot,
+      origin,
       limit: 20,
     };
 

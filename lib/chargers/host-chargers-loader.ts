@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { type Result, ok, err } from "@/lib/rules";
-import type { HostChargerListItem } from "./host-chargers-helpers";
+import { toFormTime, type HostChargerListItem, type StoredAvailabilityWindow } from "./host-chargers-helpers";
 
 export interface LoadHostChargersResult {
   chargers: HostChargerListItem[];
@@ -105,17 +105,27 @@ export async function loadHostChargers(): Promise<Result<LoadHostChargersResult>
     const chargerIds = rawChargers.map((c) => c.id);
     const adminClient = createAdminClient();
 
-    // 3. Fetch count of availability windows per charger
+    // 3. Fetch the weekly availability schedule for every charger in one query
     const { data: windowsData, error: windowsError } = await adminClient
       .from("availability_windows")
-      .select("charger_id")
-      .in("charger_id", chargerIds);
+      .select("charger_id, day_of_week, start_time, end_time")
+      .in("charger_id", chargerIds)
+      .order("day_of_week", { ascending: true })
+      .order("start_time", { ascending: true });
 
-    const windowsCountMap = new Map<string, number>();
+    const windowsMap = new Map<string, StoredAvailabilityWindow[]>();
     if (!windowsError && windowsData) {
       for (const w of windowsData) {
-        windowsCountMap.set(w.charger_id, (windowsCountMap.get(w.charger_id) || 0) + 1);
+        const list = windowsMap.get(w.charger_id) || [];
+        list.push({
+          day_of_week: Number(w.day_of_week),
+          start_time: toFormTime(w.start_time),
+          end_time: toFormTime(w.end_time),
+        });
+        windowsMap.set(w.charger_id, list);
       }
+    } else if (windowsError) {
+      console.error("[loadHostChargers] Windows query error:", windowsError);
     }
 
     // 4. Fetch count of upcoming confirmed bookings per charger (start_at > now)
@@ -153,7 +163,8 @@ export async function loadHostChargers(): Promise<Result<LoadHostChargersResult>
       isActive: Boolean(c.is_active),
       electricityPermissionAcknowledged: Boolean(c.electricity_permission_acknowledged),
       createdAt: c.created_at,
-      availabilityWindowsCount: windowsCountMap.get(c.id) || 0,
+      windows: windowsMap.get(c.id) || [],
+      availabilityWindowsCount: (windowsMap.get(c.id) || []).length,
       upcomingConfirmedBookingsCount: upcomingBookingsCountMap.get(c.id) || 0,
     }));
 
@@ -251,11 +262,23 @@ export async function loadHostChargerById(chargerId: string): Promise<Result<Hos
 
     const adminClient = createAdminClient();
 
-    // Availability windows count
-    const { count: windowsCount } = await adminClient
+    // Weekly schedule, ready to drop back into the listing form
+    const { data: windowRows, error: windowRowsError } = await adminClient
       .from("availability_windows")
-      .select("id", { count: "exact", head: true })
-      .eq("charger_id", charger.id);
+      .select("day_of_week, start_time, end_time")
+      .eq("charger_id", charger.id)
+      .order("day_of_week", { ascending: true })
+      .order("start_time", { ascending: true });
+
+    if (windowRowsError) {
+      console.error("[loadHostChargerById] Windows query error:", windowRowsError);
+    }
+
+    const windows: StoredAvailabilityWindow[] = (windowRows || []).map((w) => ({
+      day_of_week: Number(w.day_of_week),
+      start_time: toFormTime(w.start_time),
+      end_time: toFormTime(w.end_time),
+    }));
 
     // Upcoming confirmed bookings count
     const nowIso = new Date().toISOString();
@@ -281,7 +304,8 @@ export async function loadHostChargerById(chargerId: string): Promise<Result<Hos
       isActive: Boolean(charger.is_active),
       electricityPermissionAcknowledged: Boolean(charger.electricity_permission_acknowledged),
       createdAt: charger.created_at,
-      availabilityWindowsCount: windowsCount || 0,
+      windows,
+      availabilityWindowsCount: windows.length,
       upcomingConfirmedBookingsCount: upcomingCount || 0,
     };
 

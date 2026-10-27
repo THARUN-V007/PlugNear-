@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { MapPin, ShieldCheck } from "lucide-react";
 import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -9,6 +10,12 @@ import type { GeoPoint } from "@/lib/rules";
 interface ApproximateLocationMapProps {
   approximateLocation: GeoPoint;
   chargerTitle: string;
+  /**
+   * Exact position, provided only once the viewer is entitled to it (the host,
+   * or a driver with a confirmed booking). Until then the masked pin is shown.
+   */
+  unlockedLocation?: GeoPoint | null;
+  unlockedAddress?: string | null;
 }
 
 function createApproxPinIcon() {
@@ -16,7 +23,7 @@ function createApproxPinIcon() {
     className: "approx-pin",
     html: `
       <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #059669; border: 2.5px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.25); color: white; font-weight: bold; font-size: 16px;">
-        ⚡
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </div>
     `,
     iconSize: [34, 34],
@@ -28,14 +35,18 @@ function createApproxPinIcon() {
 export default function ApproximateLocationMap({
   approximateLocation,
   chargerTitle,
+  unlockedLocation,
+  unlockedAddress,
 }: ApproximateLocationMapProps) {
   const pinIcon = useMemo(() => createApproxPinIcon(), []);
+  const isUnlocked = Boolean(unlockedLocation);
+  const point = unlockedLocation ?? approximateLocation;
 
   return (
     <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner z-0">
       <MapContainer
-        center={[approximateLocation.latitude, approximateLocation.longitude]}
-        zoom={14}
+        center={[point.latitude, point.longitude]}
+        zoom={isUnlocked ? 16 : 14}
         scrollWheelZoom={false}
         className="h-full w-full"
       >
@@ -44,28 +55,27 @@ export default function ApproximateLocationMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* 300-meter approximate privacy radius circle */}
+        {/* A 300 m privacy ring while masked; a tight ring once the exact pin is earned. */}
         <Circle
-          center={[approximateLocation.latitude, approximateLocation.longitude]}
-          radius={300}
+          center={[point.latitude, point.longitude]}
+          radius={isUnlocked ? 60 : 300}
           pathOptions={{
-            color: "#059669",
-            fillColor: "#10b981",
-            fillOpacity: 0.15,
+            color: isUnlocked ? "#047857" : "#059669",
+            fillColor: isUnlocked ? "#34d399" : "#10b981",
+            fillOpacity: isUnlocked ? 0.22 : 0.15,
             weight: 2,
-            dashArray: "6, 6",
+            dashArray: isUnlocked ? undefined : "6, 6",
           }}
         />
 
-        <Marker
-          position={[approximateLocation.latitude, approximateLocation.longitude]}
-          icon={pinIcon}
-        >
+        <Marker position={[point.latitude, point.longitude]} icon={pinIcon}>
           <Popup>
             <div className="text-xs space-y-1">
               <p className="font-bold text-slate-900">{chargerTitle}</p>
               <p className="text-slate-500">
-                Approximate area (~300m radius). Exact address shared after confirmation.
+                {isUnlocked
+                  ? unlockedAddress ?? "Exact location unlocked by your confirmed booking."
+                  : "Approximate area (~300m radius). Exact address shared after confirmation."}
               </p>
             </div>
           </Popup>
@@ -74,9 +84,17 @@ export default function ApproximateLocationMap({
 
       {/* Floating privacy badge overlay */}
       <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-[400] rounded-xl bg-white/95 backdrop-blur px-3 py-2 text-xs text-slate-700 shadow-md border border-slate-200 flex items-center gap-2">
-        <span className="text-base">🛡️</span>
+        <span aria-hidden>
+          {isUnlocked ? (
+            <MapPin className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+          ) : (
+            <ShieldCheck className="h-4 w-4 text-slate-500" strokeWidth={1.75} />
+          )}
+        </span>
         <span className="font-medium text-[11px] sm:text-xs">
-          Approximate area shown for host privacy. Exact address is unlocked once host confirms.
+          {isUnlocked
+            ? "Exact location unlocked - your booking on this charger is confirmed."
+            : "Approximate area shown for host privacy. Exact address is unlocked once the host confirms."}
         </span>
       </div>
     </div>

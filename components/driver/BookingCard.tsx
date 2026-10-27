@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ArrowRight, MapPin, PlugZap, ShieldCheck, Zap } from "lucide-react";
 import {
   type DriverBookingItem,
   getStatusBadgeDetails,
@@ -10,11 +11,13 @@ import {
 
 interface BookingCardProps {
   booking: DriverBookingItem;
+  serverNow: string;
   onBookingCancelled?: (bookingId: string) => void;
 }
 
 export default function BookingCard({
   booking,
+  serverNow,
   onBookingCancelled,
 }: BookingCardProps) {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -22,7 +25,7 @@ export default function BookingCard({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const badge = getStatusBadgeDetails(booking.status);
-  const isCancellable = canCancelBooking(booking, new Date());
+  const isCancellable = canCancelBooking(booking, new Date(serverNow));
 
   const formatISTDate = (isoString: string) => {
     const d = new Date(isoString);
@@ -91,11 +94,13 @@ export default function BookingCard({
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700 border border-slate-200">
-              🔌 {booking.connectorType}
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+              <PlugZap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              {booking.connectorType}
             </span>
-            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
-              ⚡ {booking.powerKw} kW
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+              <Zap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              {booking.powerKw} kW
             </span>
           </div>
 
@@ -142,8 +147,9 @@ export default function BookingCard({
         {booking.exactAddress ? (
           <div className="rounded-2xl bg-emerald-50/70 p-3.5 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
-                <span>📍</span> Confirmed Street Address
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                <MapPin className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                Confirmed Street Address
               </span>
               <p className="text-xs font-bold text-slate-900">{booking.exactAddress}</p>
             </div>
@@ -156,13 +162,13 @@ export default function BookingCard({
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition shrink-0"
               >
                 <span>Get Directions</span>
-                <span>&rarr;</span>
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </a>
             )}
           </div>
         ) : (
           <div className="rounded-2xl bg-slate-50 p-3 border border-slate-100 flex items-start gap-2 text-xs text-slate-500">
-            <span className="text-sm">🛡️</span>
+            <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.75} aria-hidden />
             <div>
               <span className="font-semibold text-slate-700">Approximate Location</span>
               <p className="text-[11px] text-slate-500">

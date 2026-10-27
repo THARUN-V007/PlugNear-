@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getApproximateCoordinates,
+  canViewExactLocation,
   validateSlot,
   checkAvailability,
   checkSlotOverlap,
@@ -27,6 +28,11 @@ export interface SafeChargerDetails {
   hostConnectionType: string;
   approximateLocation: GeoPoint;
   isActive: boolean;
+  /**
+   * Exact address and pin, populated only when the viewer is entitled to them
+   * (rule 8.9: the host, or a driver holding a confirmed booking here).
+   */
+  confirmedLocation: { addressText: string; location: GeoPoint } | null;
 }
 
 export interface SlotPreValidation {
@@ -104,6 +110,52 @@ export async function loadChargerDetails(
   };
   const approximateLocation = getApproximateCoordinates(chargerData.id, exactLocation);
 
+  // Rule 8.9: unlock the exact street address and pin only for a driver holding a
+  // confirmed booking on this charger. Pending requests do not unlock anything.
+  let confirmedLocation: SafeChargerDetails["confirmedLocation"] = null;
+  if (params?.currentDriverId) {
+    const { data: driverConfirmedRows } = await adminClient
+      .from("bookings")
+      .select("id, charger_id, driver_id, start_at, end_at, status")
+      .eq("charger_id", chargerId)
+      .eq("driver_id", params.currentDriverId)
+      .eq("status", "confirmed")
+      .limit(1);
+
+    const driverBookingsOnCharger: BookingRecord[] = (driverConfirmedRows || []).map((b) => ({
+      id: b.id,
+      chargerId: b.charger_id,
+      driverId: b.driver_id,
+      startAt: new Date(b.start_at),
+      endAt: new Date(b.end_at),
+      status: b.status,
+    }));
+
+    const maySeeExact = canViewExactLocation(
+      { userId: params.currentDriverId, role: "driver" },
+      { hostId: chargerData.host_id },
+      driverBookingsOnCharger
+    );
+
+    if (maySeeExact) {
+      const { data: exactRow } = await adminClient
+        .from("chargers")
+        .select("address_text, latitude, longitude")
+        .eq("id", chargerId)
+        .maybeSingle();
+
+      if (exactRow) {
+        confirmedLocation = {
+          addressText: exactRow.address_text,
+          location: {
+            latitude: Number(exactRow.latitude),
+            longitude: Number(exactRow.longitude),
+          },
+        };
+      }
+    }
+  }
+
   const safeCharger: SafeChargerDetails = {
     id: chargerData.id,
     hostId: chargerData.host_id,
@@ -115,6 +167,7 @@ export async function loadChargerDetails(
     hostConnectionType: chargerData.host_connection_type || "domestic",
     approximateLocation,
     isActive: Boolean(chargerData.is_active),
+    confirmedLocation,
   };
 
   // 2. Fetch availability windows

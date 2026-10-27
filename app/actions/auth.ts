@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { SignUpSchema, LogInSchema, type UserRole } from "@/lib/validation/auth";
 
 export interface AuthActionState {
@@ -113,9 +114,42 @@ export async function logInAction(
     .from("profiles")
     .select("role")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
-  const role = (profile?.role as UserRole) || "driver";
+  let role = profile?.role === "host" || profile?.role === "driver"
+    ? (profile.role as UserRole)
+    : null;
+
+  if (!role) {
+    // A session whose profile row never materialised would bounce between
+    // /login and the role portals forever. Repair it from the same metadata the
+    // auth trigger uses, so sign-in can never dead-end.
+    const metadata = authData.user.user_metadata ?? {};
+    const repairedRole: UserRole = metadata.role === "host" ? "host" : "driver";
+    const metadataName = typeof metadata.name === "string" ? metadata.name.trim() : "";
+
+    const { error: repairError } = await createAdminClient()
+      .from("profiles")
+      .upsert(
+        {
+          id: authData.user.id,
+          name: metadataName || authData.user.email || "PlugNear user",
+          role: repairedRole,
+          phone: typeof metadata.phone === "string" ? metadata.phone : null,
+        },
+        { onConflict: "id" }
+      );
+
+    if (repairError) {
+      console.error("[logInAction] Profile repair failed:", repairError);
+      return {
+        error:
+          "We could not finish preparing your account. Please try again in a moment.",
+      };
+    }
+
+    role = repairedRole;
+  }
 
   revalidatePath("/", "layout");
   redirect(role === "host" ? "/host" : "/driver");

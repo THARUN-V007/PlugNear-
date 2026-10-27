@@ -6,6 +6,7 @@ import {
   buildChargerInsertRecord,
   mapChargerError,
 } from "@/lib/chargers/host-chargers-helpers";
+import { replaceChargerAvailabilityWindows } from "@/lib/chargers/availability-windows";
 
 export async function POST(request: Request) {
   try {
@@ -105,11 +106,35 @@ export async function POST(request: Request) {
       );
     }
 
+    // 4. Store the weekly availability schedule with the listing. Without windows a
+    //    charger matches no search slot, so a listing without them is dead on arrival.
+    const windowsResult = await replaceChargerAvailabilityWindows(
+      adminClient,
+      insertedCharger.id,
+      parseResult.data.windows
+    );
+
+    if (!windowsResult.success) {
+      // Roll the half-created listing back so the host can fix the schedule and
+      // retry, rather than owning an invisible charger.
+      await adminClient.from("chargers").delete().eq("id", insertedCharger.id);
+
+      const status = windowsResult.error.code === "MIGRATION_MISSING" ? 500 : 400;
+      return NextResponse.json(
+        {
+          success: false,
+          error: windowsResult.error,
+        },
+        { status }
+      );
+    }
+
     return NextResponse.json(
       {
         success: true,
         data: {
           charger: insertedCharger,
+          windowsSaved: windowsResult.data,
         },
       },
       { status: 201 }

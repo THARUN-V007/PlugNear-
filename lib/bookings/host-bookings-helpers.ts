@@ -201,12 +201,16 @@ export function mapHostActionError(code: string, fallbackMessage?: string): stri
       return "A confirmed booking cannot be cancelled once its scheduled start time has arrived.";
     case "UNAUTHORIZED_ACTOR":
       return "You are not authorized to manage bookings on this charger.";
+    case "DRIVER_SLOT_CONFLICT":
+      return "This driver already has a confirmed booking at another charger for that time, so it cannot be approved.";
+    case "CHARGER_INACTIVE":
+      return "This charging point is no longer active. Reactivate it or decline the request.";
     case "INVALID_TRANSITION":
       return "This action is no longer possible for this booking. Please refresh the page.";
     case "TERMINAL_STATE":
       return "This booking is in a final status and can no longer be modified.";
     case "MIGRATION_MISSING":
-      return "Database migration missing: Please apply supabase/migrations/20261027000003_host_approval_atomicity.sql in your Supabase SQL Editor.";
+      return "Database migration missing: apply supabase/migrations/20261027000003_host_approval_atomicity.sql and supabase/migrations/20261028000003_booking_edge_integrity.sql in your Supabase SQL Editor.";
     default:
       return fallbackMessage || "An unexpected error occurred. Please try again.";
   }

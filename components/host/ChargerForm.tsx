@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle, Loader2, Lock, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -8,8 +9,10 @@ import { APP_CURRENCY } from "@/lib/rules";
 import {
   CreateChargerSchema,
   HOST_CONNECTION_LABELS,
+  type AvailabilityWindowInput,
   type HostConnectionType,
 } from "@/lib/validation/charger";
+import AvailabilityWindowsEditor from "./AvailabilityWindowsEditor";
 import type { HostChargerListItem } from "@/lib/chargers/host-chargers-helpers";
 import { DEFAULT_MAP_CENTER } from "@/lib/search/search-helpers";
 
@@ -67,6 +70,26 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
   const [electricityPermissionAcknowledged, setElectricityPermissionAcknowledged] =
     useState<boolean>(Boolean(initialData?.electricityPermissionAcknowledged));
 
+  // Weekly availability. A charger with no window matches no search slot, so a
+  // new listing starts with a sensible everyday range the host can edit.
+  const [windows, setWindows] = useState<AvailabilityWindowInput[]>(
+    initialData?.windows
+      ? initialData.windows.map((w) => ({
+          day_of_week: w.day_of_week,
+          start_time: w.start_time,
+          end_time: w.end_time,
+        }))
+      : [
+          { day_of_week: 0, start_time: "06:00", end_time: "22:30" },
+          { day_of_week: 1, start_time: "06:00", end_time: "22:30" },
+          { day_of_week: 2, start_time: "06:00", end_time: "22:30" },
+          { day_of_week: 3, start_time: "06:00", end_time: "22:30" },
+          { day_of_week: 4, start_time: "06:00", end_time: "22:30" },
+          { day_of_week: 5, start_time: "06:00", end_time: "22:30" },
+          { day_of_week: 6, start_time: "06:00", end_time: "22:30" },
+        ]
+  );
+
   // Submission & Validation States
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,6 +122,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
       price_per_hour: parseFloat(pricePerHour) || 0,
       notes: notes || null,
       host_connection_type: hostConnectionType,
+      windows,
       electricity_permission_acknowledged: electricityPermissionAcknowledged,
     };
 
@@ -157,7 +181,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
       {/* Server Error Alert */}
       {serverError && (
         <div className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs font-semibold text-rose-800 flex items-start gap-3 shadow-xs">
-          <span className="text-xl">⚠️</span>
+          <AlertTriangle className="h-5 w-5 shrink-0 text-rose-600" strokeWidth={1.75} aria-hidden />
           <div className="flex-1">
             <p className="font-bold">Unable to Save Charging Point</p>
             <p className="mt-0.5">{serverError}</p>
@@ -167,7 +191,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
             onClick={() => setServerError(null)}
             className="text-rose-500 hover:text-rose-700 font-bold"
           >
-            ✕
+            <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
           </button>
         </div>
       )}
@@ -196,7 +220,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
             className={`mt-1.5 block w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 shadow-2xs focus:outline-none focus:ring-2 ${
               fieldErrors.title
                 ? "border-rose-300 focus:ring-rose-500 bg-rose-50/30"
-                : "border-slate-300 focus:ring-purple-500"
+                : "border-slate-300 focus:ring-cyan-500"
             }`}
           />
           {fieldErrors.title && (
@@ -211,7 +235,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
               Private Street Address <span className="text-rose-500">*</span>
             </label>
             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-              🔒 Private: Hidden until confirmed
+              <Lock className="h-3 w-3" strokeWidth={2.25} aria-hidden /> Private: Hidden until confirmed
             </span>
           </div>
           <textarea
@@ -224,7 +248,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
             className={`mt-1.5 block w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 shadow-2xs focus:outline-none focus:ring-2 ${
               fieldErrors.address_text
                 ? "border-rose-300 focus:ring-rose-500 bg-rose-50/30"
-                : "border-slate-300 focus:ring-purple-500"
+                : "border-slate-300 focus:ring-cyan-500"
             }`}
           />
           {fieldErrors.address_text && (
@@ -276,7 +300,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
               id="connector_type"
               value={connectorType}
               onChange={(e) => setConnectorType(e.target.value)}
-              className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 shadow-2xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
               {CONNECTOR_OPTIONS.map((c) => (
                 <option key={c} value={c}>
@@ -304,7 +328,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
                 className={`block w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 ${
                   fieldErrors.power_kw
                     ? "border-rose-300 focus:ring-rose-500 bg-rose-50/30"
-                    : "border-slate-300 focus:ring-purple-500"
+                    : "border-slate-300 focus:ring-cyan-500"
                 }`}
               />
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -337,7 +361,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
                 className={`block w-full rounded-xl border pl-7 pr-12 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 ${
                   fieldErrors.price_per_hour
                     ? "border-rose-300 focus:ring-rose-500 bg-rose-50/30"
-                    : "border-slate-300 focus:ring-purple-500"
+                    : "border-slate-300 focus:ring-cyan-500"
                 }`}
               />
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -364,16 +388,38 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g., Covered parking spot in basement. Ring bell on arrival or inform security."
             maxLength={1000}
-            className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 shadow-2xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
           />
         </div>
       </div>
 
-      {/* Section 4: Electrical Connection & Regulatory Declaration */}
+      {/* Section 4: Weekly Availability Windows */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">4. Weekly Availability</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              When can drivers charge here? A booking must fit entirely inside one window on
+              that day, and a charger with no window never appears in search.
+            </p>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-600">
+            Local time · Asia/Kolkata
+          </span>
+        </div>
+
+        <AvailabilityWindowsEditor
+          value={windows}
+          onChange={setWindows}
+          serverError={fieldErrors.windows}
+        />
+      </div>
+
+      {/* Section 5: Electrical Connection & Regulatory Declaration */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
         <div>
           <h2 className="text-base font-bold text-slate-900">
-            4. Connection Type & Regulatory Declaration
+            5. Connection Type & Regulatory Declaration
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Specify your electricity meter classification and confirm regulatory compliance.
@@ -397,7 +443,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
                 key={item.id}
                 className={`relative flex flex-col p-4 rounded-2xl border cursor-pointer transition ${
                   hostConnectionType === item.id
-                    ? "border-purple-600 bg-purple-50/50 ring-2 ring-purple-500"
+                    ? "border-cyan-600 bg-cyan-50/50 ring-2 ring-cyan-500"
                     : "border-slate-200 bg-white hover:bg-slate-50"
                 }`}
               >
@@ -421,7 +467,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
           className={`rounded-2xl border p-4.5 transition ${
             fieldErrors.electricity_permission_acknowledged
               ? "border-rose-300 bg-rose-50/60"
-              : "border-purple-200 bg-purple-50/30"
+              : "border-cyan-200 bg-cyan-50/30"
           }`}
         >
           <label className="flex items-start gap-3.5 cursor-pointer">
@@ -438,7 +484,7 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
                   });
                 }
               }}
-              className="mt-1 h-5 w-5 rounded-md border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+              className="mt-1 h-5 w-5 rounded-md border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
             />
             <div className="text-xs leading-relaxed text-slate-800">
               <span className="font-bold block text-slate-900">
@@ -470,11 +516,11 @@ export default function ChargerForm({ initialData, isEdit = false }: ChargerForm
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-xl bg-purple-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 flex items-center gap-2"
+          className="rounded-xl bg-cyan-600 px-6 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 flex items-center gap-2"
         >
           {isSubmitting ? (
             <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               <span>Saving...</span>
             </>
           ) : isEdit ? (

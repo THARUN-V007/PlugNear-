@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PlugZap } from "lucide-react";
 import Link from "next/link";
 import {
   type DriverBookingItem,
@@ -10,10 +11,17 @@ import BookingCard from "./BookingCard";
 
 interface DriverBookingsViewProps {
   initialBookings: DriverBookingItem[];
+  /**
+   * Instant captured while rendering on the server. Cancellability is a function
+   * of "now", so both cards and hydration must agree on the same clock or React
+   * reports a markup mismatch and the button flickers.
+   */
+  serverNow: string;
 }
 
 export default function DriverBookingsView({
   initialBookings,
+  serverNow,
 }: DriverBookingsViewProps) {
   const [bookings, setBookings] = useState<DriverBookingItem[]>(initialBookings);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
@@ -102,13 +110,14 @@ export default function DriverBookingsView({
             <BookingCard
               key={booking.id}
               booking={booking}
+              serverNow={serverNow}
               onBookingCancelled={handleBookingCancelled}
             />
           ))}
         </div>
       ) : (
         <div className="rounded-3xl bg-white p-8 sm:p-12 border border-slate-200 text-center space-y-4 shadow-xs">
-          <div className="text-4xl">🔌</div>
+          <PlugZap className="h-10 w-10 text-slate-300" strokeWidth={1.5} aria-hidden />
           <div className="space-y-1">
             <h3 className="text-base font-bold text-slate-900">
               {activeTab === "upcoming"
