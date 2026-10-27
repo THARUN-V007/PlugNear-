@@ -9,16 +9,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // ── Design-brief palette ───────────────────────────────────────────
+        canvas:  "#0F1115",   // app shell background (never pure #000)
+        panel:   "#181B22",   // card / component surface
+        border:  "#2C303B",   // 1 px separator between panels
+        primary: "#39FF14",   // Toxic Bright Green — eco / safe state
+        "primary-dim": "#2BCC10",
+        "primary-glow": "rgba(57,255,20,0.18)",
+        // ── Backward-compatible aliases ────────────────────────────────────
         brand: {
-          50: "#f0fdf4",
+          50:  "#f0fdf4",
           100: "#dcfce7",
-          500: "#22c55e",
-          600: "#16a34a",
-          700: "#15803d",
+          500: "#39FF14",
+          600: "#2BCC10",
+          700: "#1f9a0c",
           800: "#166534",
-          900: "#14532d",
+          900: "#0e3b1e",
         },
-        // Deep ink used for the app shell and hero surfaces.
         ink: {
           700: "#1e293b",
           800: "#151d2c",
@@ -31,10 +38,11 @@ const config: Config = {
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       boxShadow: {
-        card: "0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12)",
-        "card-hover": "0 2px 4px rgba(15, 23, 42, 0.05), 0 18px 40px -16px rgba(15, 23, 42, 0.22)",
-        glow: "0 0 0 1px rgba(16, 185, 129, 0.18), 0 12px 32px -12px rgba(16, 185, 129, 0.45)",
-        "glow-amber": "0 0 0 1px rgba(245, 158, 11, 0.22), 0 12px 32px -12px rgba(245, 158, 11, 0.5)",
+        card:        "0 1px 2px rgba(0,0,0,0.18), 0 8px 24px -12px rgba(0,0,0,0.35)",
+        "card-hover": "0 2px 4px rgba(0,0,0,0.22), 0 18px 40px -16px rgba(0,0,0,0.45)",
+        glow:        "0 0 0 1px rgba(57,255,20,0.22), 0 12px 32px -12px rgba(57,255,20,0.35)",
+        "glow-cyan":  "0 0 0 1px rgba(6,182,212,0.22), 0 12px 32px -12px rgba(6,182,212,0.35)",
+        "glow-amber": "0 0 0 1px rgba(245,158,11,0.22), 0 12px 32px -12px rgba(245,158,11,0.4)",
       },
       keyframes: {
         fadeIn: {
