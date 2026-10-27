@@ -19,7 +19,7 @@ export default async function DriverSearchPage(props: DriverPageProps) {
       <main className="flex-1 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 w-full">
         {isForbiddenRedirect && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm flex items-start gap-3">
-            <AlertTriangle className="h-8 w-8 text-slate-300" strokeWidth={1.5} aria-hidden />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" strokeWidth={2} aria-hidden />
             <div>
               <p className="font-semibold">Access Restricted</p>
               <p>
@@ -29,7 +29,7 @@ export default async function DriverSearchPage(props: DriverPageProps) {
           </div>
         )}
 
-        <DriverSearchScreen />
+        <DriverSearchScreen initialNowIso={new Date().toISOString()} />
       </main>
     </div>
   );

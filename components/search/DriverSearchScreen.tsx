@@ -30,8 +30,20 @@ const ChargerMap = dynamic(() => import("@/components/map/ChargerMap"), {
   ),
 });
 
-export default function DriverSearchScreen() {
-  const defaults = getDefaultSearchDateTime();
+interface DriverSearchScreenProps {
+  /**
+   * Server render timestamp. The default slot is derived from it so the SSR
+   * markup and the hydration pass compute the same 30-minute slot instead of
+   * disagreeing when the page loads near a boundary.
+   */
+  initialNowIso: string;
+}
+
+export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreenProps) {
+  const defaults = useMemo(
+    () => getDefaultSearchDateTime(new Date(initialNowIso)),
+    [initialNowIso]
+  );
 
   // Search filter state
   const [location, setLocation] = useState<GeoPoint>(DEFAULT_MAP_CENTER);
