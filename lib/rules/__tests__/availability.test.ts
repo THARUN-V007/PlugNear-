@@ -120,4 +120,64 @@ describe("Rule 2: Availability Windows", () => {
       expect(result.error.code).toBe(ERROR_CODES.CHARGER_INACTIVE);
     }
   });
+
+  describe("Slots that end exactly at local midnight", () => {
+    // Sunday 2026-11-01 in Asia/Kolkata is UTC+05:30:
+    //   23:30 IST = 18:00Z, 00:00 IST (Monday) = 18:30Z, 01:00 IST = 19:30Z.
+    const lateSlot = {
+      startAt: "2026-11-01T18:00:00Z",
+      endAt: "2026-11-01T18:30:00Z",
+    };
+
+    it("accepts 23:30-00:00 when the window runs to the end of the day", () => {
+      const result = checkAvailability(lateSlot, {
+        isActive: true,
+        windows: [{ dayOfWeek: 0, startTime: "06:00", endTime: "24:00" }],
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it("still rejects it when the window stops short of midnight", () => {
+      const result = checkAvailability(lateSlot, {
+        isActive: true,
+        windows: [{ dayOfWeek: 0, startTime: "06:00", endTime: "23:45" }],
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe(ERROR_CODES.OUTSIDE_AVAILABILITY);
+      }
+    });
+
+    it("still rejects a slot that runs past midnight into the next hour", () => {
+      const result = checkAvailability(
+        { startAt: "2026-11-01T17:30:00Z", endAt: "2026-11-01T19:30:00Z" }, // 23:00-01:00 IST
+        {
+          isActive: true,
+          windows: [{ dayOfWeek: 0, startTime: "06:00", endTime: "24:00" }],
+        }
+      );
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe(ERROR_CODES.CROSSES_MIDNIGHT);
+      }
+    });
+
+    it("ignores the next day's windows when matching a midnight-ending slot", () => {
+      // Monday has no window at all; the Sunday one must carry the slot.
+      const result = checkAvailability(lateSlot, {
+        isActive: true,
+        windows: [{ dayOfWeek: 0, startTime: "18:00", endTime: "24:00" }],
+      });
+      expect(result.success).toBe(true);
+
+      const noSundayWindow = checkAvailability(lateSlot, {
+        isActive: true,
+        windows: [{ dayOfWeek: 1, startTime: "00:00", endTime: "06:00" }],
+      });
+      expect(noSundayWindow.success).toBe(false);
+    });
+  });
 });

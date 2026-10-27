@@ -30,8 +30,20 @@ export function checkAvailability(
   const startDetails = toKolkataLocalDetails(slot.startAt);
   const endDetails = toKolkataLocalDetails(slot.endAt);
 
-  // 2. Reject slots crossing local midnight
-  if (startDetails.calendarDate !== endDetails.calendarDate) {
+  const startMs = new Date(slot.startAt).getTime();
+  const endMs = new Date(slot.endAt).getTime();
+  const durationMs = endMs - startMs;
+
+  // 2. A slot may end exactly at local midnight - 23:30 to 00:00 inside a window
+  // that runs to the end of the day is legal, and "24:00" is a valid window end.
+  // Anything that lands at midnight a day or more later is genuinely crossing it.
+  const endsAtMidnight =
+    endDetails.minutesFromMidnight === 0 &&
+    endDetails.calendarDate !== startDetails.calendarDate &&
+    durationMs > 0 &&
+    durationMs <= 24 * 60 * 60 * 1000;
+
+  if (startDetails.calendarDate !== endDetails.calendarDate && !endsAtMidnight) {
     return err(
       ERROR_CODES.CROSSES_MIDNIGHT,
       "Booking slots that cross local midnight are not allowed."
@@ -40,7 +52,8 @@ export function checkAvailability(
 
   const slotDay = startDetails.dayOfWeek;
   const slotStartMins = startDetails.minutesFromMidnight;
-  const slotEndMins = endDetails.minutesFromMidnight;
+  // Midnight is minute 1440 of the starting day, which is how a "24:00" window end reads.
+  const slotEndMins = endsAtMidnight ? 1440 : endDetails.minutesFromMidnight;
 
   // Filter windows matching the local day of week
   const dayWindows = charger.windows.filter((w) => w.dayOfWeek === slotDay);
