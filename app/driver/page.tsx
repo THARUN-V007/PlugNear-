@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/auth/guard";
+import { AlertTriangle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import DriverSearchScreen from "@/components/search/DriverSearchScreen";
 
@@ -18,7 +19,7 @@ export default async function DriverSearchPage(props: DriverPageProps) {
       <main className="flex-1 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 w-full">
         {isForbiddenRedirect && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm flex items-start gap-3">
-            <span className="text-xl">⚠️</span>
+            <AlertTriangle className="h-8 w-8 text-slate-300" strokeWidth={1.5} aria-hidden />
             <div>
               <p className="font-semibold">Access Restricted</p>
               <p>
