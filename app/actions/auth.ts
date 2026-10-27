@@ -45,14 +45,32 @@ export async function signUpAction(
   });
 
   if (error) {
+    const errorLower = error.message.toLowerCase();
+    if (errorLower.includes("rate limit") || errorLower.includes("too many requests")) {
+      return {
+        error:
+          "Too many sign-up attempts. Please wait a few minutes and try again, or log in if you already have an account.",
+      };
+    }
     return { error: error.message };
   }
 
-  // If email confirmation is enabled on Supabase, the session might be null initially.
-  // In development/test environments or when email confirmation is disabled, user is logged in directly.
+  // When email confirmation is disabled, session or user is returned immediately
   if (data.session) {
     revalidatePath("/", "layout");
     redirect(role === "host" ? "/host" : "/driver");
+  }
+
+  if (data.user) {
+    // If confirmation is disabled, attempt immediate sign-in so user lands directly on role page
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (!signInError) {
+      revalidatePath("/", "layout");
+      redirect(role === "host" ? "/host" : "/driver");
+    }
   }
 
   return {
