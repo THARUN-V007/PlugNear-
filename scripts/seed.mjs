@@ -181,7 +181,7 @@ async function seed() {
       connector_type: "Type 2",
       power_kw: 22.0,
       price_per_hour: 120.0,
-      host_connection_type: "dedicated",
+      host_connection_type: "dedicated_ev",
       notes: "Dedicated basement parking bay. Access card available with security.",
       is_active: true,
     },
@@ -223,7 +223,7 @@ async function seed() {
       connector_type: "Type 2",
       power_kw: 7.4,
       price_per_hour: 80.0,
-      host_connection_type: "dedicated",
+      host_connection_type: "dedicated_ev",
       notes: "Covered porch slot with Type 2 tethered cable.",
       is_active: true,
     },
@@ -250,11 +250,13 @@ async function seed() {
   console.log(`✅ Upserted ${chargers.length} chargers`);
 
   // Step 6: Availability Windows (0-6 every day 06:00 to 22:00)
+  const chargerIds = chargers.map((c) => c.id);
+  await adminClient.from("availability_windows").delete().in("charger_id", chargerIds);
+
   const windows = [];
   for (const c of chargers) {
     for (let day = 0; day <= 6; day++) {
       windows.push({
-        id: `w-${c.id.slice(0, 8)}-d${day}`,
         charger_id: c.id,
         day_of_week: day,
         start_time: "06:00",
@@ -263,9 +265,9 @@ async function seed() {
     }
   }
 
-  const { error: winErr } = await adminClient.from("availability_windows").upsert(windows, { onConflict: "id" });
+  const { error: winErr } = await adminClient.from("availability_windows").insert(windows);
   if (winErr) {
-    console.warn("⚠️ Availability windows upsert warning:", winErr.message);
+    console.warn("⚠️ Availability windows insert warning:", winErr.message);
   } else {
     console.log(`✅ Upserted ${windows.length} availability windows (7 days/week per charger)`);
   }
@@ -296,6 +298,9 @@ async function seed() {
         total_cost: 180.0,
       },
     ];
+
+    const bookingIds = sampleBookings.map((b) => b.id);
+    await adminClient.from("bookings").delete().in("id", bookingIds);
 
     const { error: bErr } = await adminClient.from("bookings").upsert(sampleBookings, { onConflict: "id" });
     if (bErr) {
