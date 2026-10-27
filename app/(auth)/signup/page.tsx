@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { AlertTriangle, Car, CheckCircle2, Loader2, PlugZap, Sparkles, Zap } from "lucide-react";
 import { signUpAction, type AuthActionState } from "@/app/actions/auth";
 
 export default function SignUpPage() {
@@ -15,8 +16,8 @@ export default function SignUpPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-lg space-y-8 rounded-2xl bg-white p-8 shadow-xl border border-slate-200">
         <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white font-extrabold text-2xl shadow-md">
-            ⚡
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/25">
+            <Zap className="h-7 w-7" strokeWidth={2.25} aria-hidden />
           </div>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
             Join PlugNear
@@ -27,23 +28,35 @@ export default function SignUpPage() {
         </div>
 
         {state?.error && (
-          <div className="rounded-lg bg-red-50 p-4 border border-red-200 text-sm text-red-700">
-            <p className="font-semibold">Registration failed:</p>
-            <p>{state.error}</p>
+          <div
+            role="alert"
+            className="plugnear-rise flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" strokeWidth={2} aria-hidden />
+            <div>
+              <p className="font-bold">Registration failed</p>
+              <p className="text-rose-700">{state.error}</p>
+            </div>
           </div>
         )}
 
         {state?.success && (
-          <div className="rounded-lg bg-emerald-50 p-4 border border-emerald-200 text-sm text-emerald-800">
-            <p className="font-semibold">Registration successful!</p>
-            <p>{state.success}</p>
-            <div className="mt-3">
-              <Link
-                href="/login"
-                className="font-semibold underline hover:text-emerald-900"
-              >
-                Proceed to Sign In &rarr;
-              </Link>
+          <div
+            role="status"
+            className="plugnear-rise flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2} aria-hidden />
+            <div>
+              <p className="font-bold">Registration successful</p>
+              <p className="text-emerald-800">{state.success}</p>
+              <div className="mt-3">
+                <Link
+                  href="/login"
+                  className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                >
+                  Proceed to Sign In &rarr;
+                </Link>
+              </div>
             </div>
           </div>
         )}
@@ -70,7 +83,7 @@ export default function SignUpPage() {
                   onChange={() => setSelectedRole("driver")}
                   className="sr-only"
                 />
-                <span className="text-xl">🚗</span>
+                <Car className="h-5 w-5 text-emerald-700" strokeWidth={1.75} aria-hidden />
                 <span className="mt-2 font-bold text-slate-900">EV Driver</span>
                 <span className="text-xs text-slate-600 mt-1">
                   Search nearby chargers, request slots & avoid dead batteries.
@@ -80,7 +93,7 @@ export default function SignUpPage() {
               <label
                 className={`relative flex cursor-pointer flex-col rounded-xl border p-4 shadow-sm transition focus:outline-none ${
                   selectedRole === "host"
-                    ? "border-purple-600 bg-purple-50/50 ring-2 ring-purple-600"
+                    ? "border-cyan-600 bg-cyan-50/50 ring-2 ring-cyan-600"
                     : "border-slate-300 bg-white hover:border-slate-400"
                 }`}
               >
@@ -92,7 +105,7 @@ export default function SignUpPage() {
                   onChange={() => setSelectedRole("host")}
                   className="sr-only"
                 />
-                <span className="text-xl">🔌</span>
+                <PlugZap className="h-5 w-5 text-cyan-700" strokeWidth={1.75} aria-hidden />
                 <span className="mt-2 font-bold text-slate-900">Charger Host</span>
                 <span className="text-xs text-slate-600 mt-1">
                   List idle chargers, configure availability & earn money.

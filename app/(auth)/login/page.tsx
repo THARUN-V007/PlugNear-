@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { AlertTriangle, ArrowRight, Loader2, Zap } from "lucide-react";
 import { logInAction, type AuthActionState } from "@/app/actions/auth";
 
 export default function LoginPage() {
@@ -14,8 +15,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl border border-slate-200">
         <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white font-extrabold text-2xl shadow-md">
-            ⚡
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/25">
+            <Zap className="h-7 w-7" strokeWidth={2.25} aria-hidden />
           </div>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
             Sign in to PlugNear
@@ -26,9 +27,15 @@ export default function LoginPage() {
         </div>
 
         {state?.error && (
-          <div className="rounded-lg bg-red-50 p-4 border border-red-200 text-sm text-red-700">
-            <p className="font-semibold">Sign in error:</p>
-            <p>{state.error}</p>
+          <div
+            role="alert"
+            className="plugnear-rise flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" strokeWidth={2} aria-hidden />
+            <div>
+              <p className="font-bold">Sign in error</p>
+              <p className="text-rose-700">{state.error}</p>
+            </div>
           </div>
         )}
 
@@ -72,9 +79,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isPending}
-            className="flex w-full justify-center rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-px hover:shadow-emerald-600/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? "Signing in..." : "Sign in"}
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Signing in...
+              </>
+            ) : (
+              <>
+                Sign in
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </>
+            )}
           </button>
         </form>
 
