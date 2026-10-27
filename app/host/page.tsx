@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertTriangle, MapPin, PlugZap, ShieldCheck, Zap } from "lucide-react";
 import { requireRole } from "@/lib/auth/guard";
 import { Navbar } from "@/components/Navbar";
 import { loadHostBookings } from "@/lib/bookings/host-bookings-loader";
@@ -24,7 +25,7 @@ export default async function HostHomePage(props: HostPageProps) {
       <main className="flex-1 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full">
         {isForbiddenRedirect && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm flex items-start gap-3">
-            <span className="text-xl">⚠️</span>
+            <AlertTriangle className="h-6 w-6 text-rose-500" strokeWidth={1.75} aria-hidden />
             <div>
               <p className="font-semibold">Access Restricted</p>
               <p>
@@ -61,8 +62,8 @@ export default async function HostHomePage(props: HostPageProps) {
         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 border border-purple-200">
-                🔌 Host Dashboard
+              <div className="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700 border border-cyan-200">
+                <PlugZap className="h-4 w-4" strokeWidth={2} aria-hidden /> Host Dashboard
               </div>
               <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
                 Welcome, {profile.name}
@@ -76,7 +77,7 @@ export default async function HostHomePage(props: HostPageProps) {
               <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block">
                 Active Role
               </span>
-              <span className="text-sm font-bold text-purple-700 capitalize">
+              <span className="text-sm font-bold text-cyan-700 capitalize">
                 {profile.role}
               </span>
             </div>
@@ -86,11 +87,11 @@ export default async function HostHomePage(props: HostPageProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
               <Link
                 href="/host/chargers"
-                className="group rounded-xl border border-purple-200 p-5 bg-purple-50/40 hover:bg-purple-50 transition shadow-xs flex flex-col justify-between"
+                className="group rounded-xl border border-cyan-200 p-5 bg-cyan-50/40 hover:bg-cyan-50 transition shadow-xs flex flex-col justify-between"
               >
                 <div>
-                  <span className="text-2xl">📍</span>
-                  <h3 className="mt-2 text-sm font-bold text-purple-950 group-hover:text-purple-700 transition">
+                  <MapPin className="h-6 w-6 text-cyan-600" strokeWidth={1.75} aria-hidden />
+                  <h3 className="mt-2 text-sm font-bold text-cyan-950 group-hover:text-cyan-700 transition">
                     1. My Charging Points →
                   </h3>
                   <p className="mt-1 text-xs text-slate-600">
@@ -109,11 +110,11 @@ export default async function HostHomePage(props: HostPageProps) {
 
               <Link
                 href="/host/bookings"
-                className="group rounded-xl border border-purple-200 p-5 bg-purple-50/40 hover:bg-purple-50 transition shadow-xs flex flex-col justify-between"
+                className="group rounded-xl border border-cyan-200 p-5 bg-cyan-50/40 hover:bg-cyan-50 transition shadow-xs flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl">✅</span>
+                    <ShieldCheck className="h-6 w-6 text-emerald-600" strokeWidth={1.75} aria-hidden />
                     {pendingCount > 0 ? (
                       <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-extrabold text-white">
                         {pendingCount} Pending
@@ -124,7 +125,7 @@ export default async function HostHomePage(props: HostPageProps) {
                       </span>
                     )}
                   </div>
-                  <h3 className="mt-2 text-sm font-bold text-purple-950 group-hover:text-purple-700 transition">
+                  <h3 className="mt-2 text-sm font-bold text-cyan-950 group-hover:text-cyan-700 transition">
                     3. Request Manager →
                   </h3>
                   <p className="mt-1 text-xs text-slate-600">
