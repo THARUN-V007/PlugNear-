@@ -106,18 +106,23 @@ export function getDefaultSearchDateTime(now: Date = new Date()): {
  */
 export function getEmptyStateMessage(
   meta: { totalInRadius: number; availableCount: number },
-  radiusKm: number
+  radiusKm: number,
+  isEmergency: boolean = false
 ): { title: string; hint: string } {
   if (meta.totalInRadius === 0) {
     return {
       title: `No chargers found within ${radiusKm} km.`,
-      hint: "Try expanding your search radius to 25 km or selecting a different search location.",
+      hint: isEmergency
+        ? "No charging points were found within range. Try widening your search radius up to 50 km or tapping a different location on the map."
+        : "Try expanding your search radius to 25 km or selecting a different search location.",
     };
   }
 
   return {
-    title: `${meta.totalInRadius} charger${meta.totalInRadius > 1 ? "s" : ""} nearby, but none are free for this time slot.`,
-    hint: "All nearby chargers are either occupied by confirmed bookings or closed during these hours. Try adjusting your start time or choosing another day.",
+    title: `${meta.totalInRadius} charger${meta.totalInRadius > 1 ? "s" : ""} nearby, but none are free ${isEmergency ? "right now" : "for this time slot"}.`,
+    hint: isEmergency
+      ? "All nearby chargers are currently occupied or outside their operating hours. Try expanding the search radius up to 50 km to find the nearest free charger."
+      : "All nearby chargers are either occupied by confirmed bookings or closed during these hours. Try adjusting your start time or choosing another day.",
   };
 }
 
