@@ -22,6 +22,7 @@ interface ChargerMapProps {
   selectedChargerId: string | null;
   onSelectCharger: (id: string) => void;
   onLocationChange: (pos: GeoPoint) => void;
+  fitBoundsPoints?: GeoPoint[];
 }
 
 // 1. Custom SVG DivIcons to eliminate broken PNG bundling issues
@@ -62,10 +63,12 @@ function MapController({
   center,
   chargers,
   onLocationChange,
+  fitBoundsPoints,
 }: {
   center: GeoPoint;
   chargers: SearchResultItem[];
   onLocationChange: (pos: GeoPoint) => void;
+  fitBoundsPoints?: GeoPoint[];
 }) {
   const map = useMap();
 
@@ -78,10 +81,17 @@ function MapController({
     },
   });
 
-  // Pan to center when search point changes
+  // Pan to center or fit bounds between driver and nearest charger
   useEffect(() => {
-    map.panTo([center.latitude, center.longitude], { animate: true });
-  }, [center.latitude, center.longitude, map]);
+    if (fitBoundsPoints && fitBoundsPoints.length >= 2) {
+      const bounds = L.latLngBounds(
+        fitBoundsPoints.map((pt) => [pt.latitude, pt.longitude])
+      );
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: true });
+    } else {
+      map.panTo([center.latitude, center.longitude], { animate: true });
+    }
+  }, [center.latitude, center.longitude, fitBoundsPoints, map]);
 
   return null;
 }
@@ -93,6 +103,7 @@ export default function ChargerMap({
   selectedChargerId,
   onSelectCharger,
   onLocationChange,
+  fitBoundsPoints,
 }: ChargerMapProps) {
   const searchIcon = useMemo(() => createSearchPointIcon(), []);
 
@@ -115,6 +126,7 @@ export default function ChargerMap({
           center={center}
           chargers={chargers}
           onLocationChange={onLocationChange}
+          fitBoundsPoints={fitBoundsPoints}
         />
 
         {/* 1. Search Point Pin & Search Radius Range Circle */}
