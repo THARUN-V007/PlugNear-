@@ -76,6 +76,15 @@ export function transitionBooking(params: TransitionParams): Result<TransitionRe
           "Only the driver who requested this booking can cancel it."
         );
       }
+      // Rule 8.6: an undecided request whose start time has passed is `expired`,
+      // not cancellable - otherwise the same request could flip between two
+      // terminal states depending on who reads it first.
+      if (nowDate.getTime() >= startDate.getTime()) {
+        return err(
+          ERROR_CODES.INVALID_TRANSITION,
+          "This request has already expired because its start time passed without a decision."
+        );
+      }
       return ok({ updatedStatus: "cancelled", decidedAt: nowDate });
     }
 
