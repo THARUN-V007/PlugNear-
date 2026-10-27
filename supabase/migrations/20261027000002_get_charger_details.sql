@@ -1,15 +1,19 @@
 -- ============================================================================
--- PlugNear: Single Charger Safe Lookup Function
+-- PlugNear: Single Charger Safe Lookup Function & RLS Cycle Fix
 -- Version: 20261027000002
 -- Description:
---   Provides a server-only function to fetch a single charger by ID for the
---   details page and booking flow.
---   SECURITY DEFINER with fixed search_path.
---   Enforces caller is service_role or authenticated driver.
---   Revoked from PUBLIC, anon, and authenticated so client browsers cannot invoke directly.
---   Granted ONLY to service_role (server-side Next.js loader/actions).
+--   1. Provides a server-only function to fetch a single charger by ID for the
+--      details page and booking flow.
+--      SECURITY DEFINER with fixed search_path.
+--      Enforces caller is service_role or authenticated driver.
+--      Revoked from PUBLIC, anon, and authenticated so client browsers cannot invoke directly.
+--      Granted ONLY to service_role (server-side Next.js loader/actions).
+--   2. Prevents mutual RLS recursion (Postgres error 42P17) between chargers and bookings:
+--      Uses a SECURITY DEFINER helper public.is_charger_host to check host ownership
+--      without recursively re-triggering the chargers SELECT policy.
 -- ============================================================================
 
+-- 1. Single Charger Safe Server-Side Lookup Function
 CREATE OR REPLACE FUNCTION public.get_charger_details_for_driver(
   p_charger_id uuid
 )
@@ -67,3 +71,30 @@ REVOKE ALL ON FUNCTION public.get_charger_details_for_driver(uuid) FROM authenti
 
 -- Grant EXECUTE exclusively to service_role
 GRANT EXECUTE ON FUNCTION public.get_charger_details_for_driver(uuid) TO service_role;
+
+-- 2. Break Mutual RLS Recursion on public.bookings
+-- Replaces the nested subquery on public.chargers with a SECURITY DEFINER helper function
+CREATE OR REPLACE FUNCTION public.is_charger_host(
+  p_charger_id uuid,
+  p_user_id uuid
+)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.chargers
+    WHERE id = p_charger_id AND host_id = p_user_id
+  );
+$$;
+
+DROP POLICY IF EXISTS "Drivers see only their own bookings" ON public.bookings;
+CREATE POLICY "Drivers see only their own bookings"
+  ON public.bookings FOR SELECT
+  TO authenticated
+  USING (
+    driver_id = auth.uid() OR
+    public.is_charger_host(charger_id, auth.uid())
+  );
