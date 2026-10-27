@@ -39,19 +39,19 @@ export default function DriverBookingsView({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* 1. Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2C303B] pb-5">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-white tracking-tight font-display">
             My Charging Bookings
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Track your charging requests, view confirmed locations, and manage upcoming slots.
           </p>
         </div>
 
         <Link
           href="/driver"
-          className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-black shadow-lg shadow-primary/20 hover:bg-[#32e012] transition shrink-0"
         >
           <span>Search Chargers</span>
           <span>&rarr;</span>
@@ -59,22 +59,22 @@ export default function DriverBookingsView({
       </div>
 
       {/* 2. Tabs: Upcoming vs Past */}
-      <div className="flex items-center gap-2 border-b border-slate-200">
+      <div className="flex items-center gap-2 border-b border-[#2C303B]">
         <button
           type="button"
           onClick={() => setActiveTab("upcoming")}
           className={`pb-3 text-sm font-bold transition border-b-2 flex items-center gap-2 ${
             activeTab === "upcoming"
-              ? "border-emerald-600 text-emerald-700"
-              : "border-transparent text-slate-500 hover:text-slate-900"
+              ? "border-primary text-primary"
+              : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
           <span>Upcoming</span>
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-black ${
               activeTab === "upcoming"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-slate-100 text-slate-600"
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "bg-[#181B22] text-slate-400 border border-[#2C303B]"
             }`}
           >
             {upcoming.length}
@@ -86,16 +86,16 @@ export default function DriverBookingsView({
           onClick={() => setActiveTab("past")}
           className={`pb-3 text-sm font-bold transition border-b-2 flex items-center gap-2 ${
             activeTab === "past"
-              ? "border-emerald-600 text-emerald-700"
-              : "border-transparent text-slate-500 hover:text-slate-900"
+              ? "border-primary text-primary"
+              : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
           <span>Past</span>
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-black ${
               activeTab === "past"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-slate-100 text-slate-600"
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "bg-[#181B22] text-slate-400 border border-[#2C303B]"
             }`}
           >
             {past.length}
@@ -116,15 +116,15 @@ export default function DriverBookingsView({
           ))}
         </div>
       ) : (
-        <div className="rounded-3xl bg-white p-8 sm:p-12 border border-slate-200 text-center space-y-4 shadow-xs">
-          <PlugZap className="h-10 w-10 text-slate-300" strokeWidth={1.5} aria-hidden />
+        <div className="rounded-3xl bg-[#181B22] p-8 sm:p-12 border border-[#2C303B] text-center space-y-4">
+          <PlugZap className="h-10 w-10 text-slate-600 mx-auto" strokeWidth={1.5} aria-hidden />
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold text-white">
               {activeTab === "upcoming"
                 ? "No Upcoming Reservations"
                 : "No Past Reservations"}
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
+            <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
               {activeTab === "upcoming"
                 ? "You don't have any active charging sessions or pending requests right now."
                 : "You don't have any completed, cancelled, or expired charging history."}
@@ -135,7 +135,7 @@ export default function DriverBookingsView({
             <div className="pt-2">
               <Link
                 href="/driver"
-                className="inline-flex items-center gap-1.5 rounded-2xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-black shadow-lg shadow-primary/20 hover:bg-[#32e012] transition"
               >
                 <span>Find Nearby Chargers</span>
                 <span>&rarr;</span>

@@ -31,8 +31,8 @@ function createSearchPointIcon() {
     className: "custom-search-pin",
     html: `
       <div style="position: relative; width: 24px; height: 24px;">
-        <span style="position: absolute; width: 24px; height: 24px; border-radius: 50%; background: #3b82f6; opacity: 0.35; animation: pn-pulse-ring 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
-        <span style="position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #2563eb; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></span>
+        <span style="position: absolute; width: 24px; height: 24px; border-radius: 50%; background: #00E5FF; opacity: 0.4; animation: pn-pulse-ring 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+        <span style="position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #00E5FF; border: 3px solid #0F1115; box-shadow: 0 0 10px rgba(0,229,255,0.6);"></span>
       </div>
     `,
     iconSize: [24, 24],
@@ -41,14 +41,13 @@ function createSearchPointIcon() {
 }
 
 function createChargerIcon(isSelected: boolean) {
-  const bg = isSelected ? "#047857" : "#059669";
-  const scale = isSelected ? "scale(1.18)" : "scale(1)";
-  const glow = isSelected ? "0 0 0 6px rgba(16,185,129,0.28), " : "";
+  const scale = isSelected ? "scale(1.22)" : "scale(1)";
+  const glow = isSelected ? "0 0 20px rgba(57,255,20,0.85), " : "0 0 8px rgba(57,255,20,0.3), ";
 
   return L.divIcon({
     className: `custom-charger-pin${isSelected ? " is-selected" : ""}`,
     html: `
-      <div style="transform: ${scale}; transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: ${bg}; border: 2.5px solid #ffffff; box-shadow: ${glow}0 4px 10px rgba(0,0,0,0.25); color: white; font-weight: bold; font-size: 16px;">
+      <div style="transform: ${scale}; transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #39FF14; border: 2.5px solid #0F1115; box-shadow: ${glow}0 4px 12px rgba(0,0,0,0.6); color: #000; font-weight: bold; font-size: 16px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </div>
     `,
@@ -58,8 +57,6 @@ function createChargerIcon(isSelected: boolean) {
   });
 }
 
-// DivIcons are immutable value objects, so building them once per selection
-// state stops Leaflet from tearing down and recreating every marker on render.
 let cachedPlainIcon: L.DivIcon | null = null;
 let cachedSelectedIcon: L.DivIcon | null = null;
 
@@ -120,7 +117,7 @@ export default function ChargerMap({
   const searchIcon = useMemo(() => createSearchPointIcon(), []);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-slate-100">
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-[#2C303B] shadow-inner bg-[#0F1115]">
       <MapContainer
         center={[center.latitude, center.longitude]}
         zoom={14}
@@ -145,7 +142,7 @@ export default function ChargerMap({
           <Popup>
             <div className="p-1 text-xs">
               <p className="font-bold text-slate-900">Search Point</p>
-              <p className="text-slate-500">Tap anywhere on map to reposition search.</p>
+              <p className="text-slate-600">Tap anywhere on map to reposition search.</p>
             </div>
           </Popup>
         </Marker>
@@ -154,8 +151,8 @@ export default function ChargerMap({
           center={[center.latitude, center.longitude]}
           radius={radiusKm * 1000}
           pathOptions={{
-            color: "#2563eb",
-            fillColor: "#3b82f6",
+            color: "#00E5FF",
+            fillColor: "#00E5FF",
             fillOpacity: 0.05,
             weight: 1.5,
             dashArray: "6, 6",
@@ -177,9 +174,9 @@ export default function ChargerMap({
                 ]}
                 radius={300}
                 pathOptions={{
-                  color: isSelected ? "#047857" : "#059669",
-                  fillColor: "#10b981",
-                  fillOpacity: isSelected ? 0.25 : 0.12,
+                  color: isSelected ? "#39FF14" : "#2C303B",
+                  fillColor: "#39FF14",
+                  fillOpacity: isSelected ? 0.25 : 0.1,
                   weight: isSelected ? 2 : 1,
                 }}
               />
@@ -200,23 +197,23 @@ export default function ChargerMap({
                       <span className="font-bold text-slate-900 line-clamp-1">
                         {c.title}
                       </span>
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200">
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 font-black">
                         {c.powerKw} kW
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between text-slate-600">
                       <span>{c.connectorType}</span>
-                      <span className="font-semibold text-slate-800">
+                      <span className="font-semibold text-slate-900">
                         ₹{c.pricePerHour.toFixed(0)}/hr
                       </span>
                     </div>
 
-                    <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-emerald-700 font-semibold">
+                    <div className="pt-1 border-t border-slate-200 flex items-center justify-between">
+                      <span className="text-emerald-700 font-bold">
                         Est: ₹{c.estimatedCost.toFixed(2)}
                       </span>
-                      <span className="text-slate-400 text-[10px]">
+                      <span className="text-slate-500 text-[10px]">
                         Approx. location
                       </span>
                     </div>
@@ -229,7 +226,7 @@ export default function ChargerMap({
       </MapContainer>
 
       {/* Floating map hint banner */}
-      <div className="pointer-events-none absolute bottom-3 left-3 z-[400] rounded-lg bg-white/90 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-sm border border-slate-200">
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[400] rounded-xl bg-[#181B22]/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-slate-300 shadow-md border border-[#2C303B]">
         Tap anywhere on the map to set the search center
       </div>
     </div>

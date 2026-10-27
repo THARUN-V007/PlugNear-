@@ -31,11 +31,11 @@ export default function SignUpPage() {
   );
 
   return (
-    <div className="relative min-h-screen bg-[#070A12] text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-emerald-500/25 selection:text-emerald-300">
-      {/* Ambient Lighting & High-Voltage Grid Glow (GPU-friendly, zero lag) */}
+    <div className="relative min-h-screen bg-canvas text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-primary/25 selection:text-primary">
+      {/* Ambient Lighting & High-Voltage Grid Glow */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(16,185,129,0.14),transparent_70%),radial-gradient(ellipse_60%_50%_at_100%_50%,rgba(14,165,233,0.08),transparent_60%)]"
+        className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(57,255,20,0.12),transparent_70%),radial-gradient(ellipse_60%_50%_at_100%_50%,rgba(0,229,255,0.08),transparent_60%)]"
       />
       <div
         aria-hidden
@@ -43,30 +43,30 @@ export default function SignUpPage() {
       />
 
       {/* Top Navbar */}
-      <header className="relative z-10 w-full border-b border-white/[0.08] bg-[#070A12]/80 backdrop-blur-md">
+      <header className="relative z-10 w-full border-b border-[#2C303B] bg-canvas/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="group flex items-center gap-3 focus:outline-none">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20 transition-transform duration-200 group-hover:scale-105">
-              <Zap className="h-5 w-5 fill-slate-950" strokeWidth={2.5} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-black shadow-lg shadow-primary/25 transition-transform duration-200 group-hover:scale-105">
+              <Zap className="h-5 w-5 fill-black" strokeWidth={2.5} />
             </div>
             <div>
-              <span className="text-lg font-extrabold tracking-tight text-white font-display">
+              <span className="text-lg font-black tracking-tight text-white font-display">
                 PlugNear
               </span>
-              <span className="hidden sm:inline-block ml-2 text-[11px] font-medium text-emerald-400/90 tracking-wider uppercase">
+              <span className="hidden sm:inline-block ml-2 text-[11px] font-bold text-primary tracking-wider uppercase">
                 EV Grid
               </span>
             </div>
           </Link>
 
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
               Bengaluru Smart Network
             </span>
             <Link
               href="/login"
-              className="rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-slate-300 hover:border-emerald-400/40 hover:bg-white/[0.08] hover:text-white transition-colors"
+              className="rounded-xl border border-[#2C303B] bg-[#181B22] px-3.5 py-1.5 text-xs sm:text-sm font-bold text-slate-200 hover:bg-[#242933] hover:text-white transition-colors"
             >
               Sign In
             </Link>
@@ -80,11 +80,11 @@ export default function SignUpPage() {
           {/* Left Column: Automotive & Network Trust Showcase */}
           <div className="space-y-8 lg:col-span-5 lg:pr-4">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 tracking-wide uppercase">
-                <BatteryCharging className="h-3.5 w-3.5 text-emerald-400" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary tracking-wide uppercase">
+                <BatteryCharging className="h-3.5 w-3.5 text-primary" />
                 Verified Peer-to-Peer Charging
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl font-display leading-[1.12]">
+              <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl font-display leading-[1.12]">
                 Power your journey on private plugs.
               </h1>
               <p className="text-base leading-relaxed text-slate-400">
@@ -93,33 +93,33 @@ export default function SignUpPage() {
               </p>
             </div>
 
-            {/* Live Network Telemetry Widget (Clean Automotive Style) */}
-            <div className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-5 backdrop-blur-md shadow-xl">
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-3 text-xs">
-                <span className="flex items-center gap-2 font-mono font-medium text-slate-300">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            {/* Live Network Telemetry Widget */}
+            <div className="rounded-3xl border border-[#2C303B] bg-[#181B22] p-5 shadow-xl">
+              <div className="flex items-center justify-between border-b border-[#2C303B] pb-3 text-xs">
+                <span className="flex items-center gap-2 font-mono font-bold text-slate-300">
+                  <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(57,255,20,0.8)]" />
                   STATION TELEMETRY
                 </span>
-                <span className="font-mono text-emerald-400 font-semibold">100% CONFLICT-FREE</span>
+                <span className="font-mono text-primary font-bold">100% CONFLICT-FREE</span>
               </div>
 
               <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-2.5">
-                  <div className="text-lg font-bold text-white font-display">0 ms</div>
+                <div className="rounded-xl border border-[#2C303B] bg-[#0F1115] p-2.5">
+                  <div className="text-lg font-black text-white font-display">0 ms</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">Overlap Window</div>
                 </div>
-                <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-2.5">
-                  <div className="text-lg font-bold text-emerald-400 font-display">&lt; 250m</div>
+                <div className="rounded-xl border border-[#2C303B] bg-[#0F1115] p-2.5">
+                  <div className="text-lg font-black text-primary font-display">&lt; 250m</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">Masked Privacy Pin</div>
                 </div>
-                <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-2.5">
-                  <div className="text-lg font-bold text-cyan-400 font-display">7.4-22kW</div>
+                <div className="rounded-xl border border-[#2C303B] bg-[#0F1115] p-2.5">
+                  <div className="text-lg font-black text-cyan-400 font-display">7.4-22kW</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">Type 2 / AC Fast</div>
                 </div>
               </div>
 
-              <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/20 p-3 text-xs text-emerald-200">
-                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+              <div className="mt-4 flex items-start gap-2.5 rounded-2xl bg-[#0F1115] border border-primary/20 p-3.5 text-xs text-slate-300">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-primary mt-0.5" />
                 <span>
                   Host coordinates and contact details unlock only after booking approval. Public search never exposes private driveway addresses.
                 </span>
@@ -141,11 +141,11 @@ export default function SignUpPage() {
                 },
               ].map((item, idx) => (
                 <div key={idx} className="flex items-start gap-3 text-sm">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-emerald-400">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#2C303B] bg-[#181B22] text-primary">
                     <item.icon className="h-4 w-4" />
                   </div>
                   <div>
-                    <span className="font-semibold text-white">{item.title}</span>
+                    <span className="font-bold text-white font-display">{item.title}</span>
                     <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
@@ -155,18 +155,18 @@ export default function SignUpPage() {
 
           {/* Right Column: High-Precision Registration Console */}
           <div className="lg:col-span-7">
-            <div className="relative mx-auto max-w-xl rounded-3xl border border-white/[0.1] bg-[#0C1220]/90 p-6 sm:p-9 shadow-2xl backdrop-blur-xl">
+            <div className="relative mx-auto max-w-xl rounded-3xl border border-[#2C303B] bg-[#181B22] p-6 sm:p-9 shadow-2xl">
               {/* Top Accent Line */}
               <div
                 aria-hidden
-                className="absolute -top-px left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/80 to-transparent"
+                className="absolute -top-px left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent"
               />
 
               <div className="mb-6">
-                <span className="inline-block text-[11px] font-mono uppercase tracking-widest text-emerald-400 font-semibold">
+                <span className="inline-block text-[11px] font-mono uppercase tracking-widest text-primary font-bold">
                   Account Registration
                 </span>
-                <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
+                <h2 className="mt-1 text-2xl sm:text-3xl font-black text-white font-display tracking-tight">
                   Join the PlugNear Grid
                 </h2>
                 <p className="mt-1 text-sm text-slate-400">
@@ -177,7 +177,7 @@ export default function SignUpPage() {
               {state?.error && (
                 <div
                   role="alert"
-                  className="mb-6 flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-950/40 p-4 text-sm text-rose-200"
+                  className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-800 bg-rose-950/40 p-4 text-sm text-rose-200"
                 >
                   <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-400" />
                   <div>
@@ -190,16 +190,16 @@ export default function SignUpPage() {
               {state?.success && (
                 <div
                   role="status"
-                  className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-950/40 p-4 text-sm text-emerald-200"
+                  className="mb-6 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm text-primary"
                 >
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                   <div>
-                    <p className="font-bold text-emerald-300">Registration successful</p>
-                    <p className="mt-0.5 text-xs text-emerald-200/90">{state.success}</p>
+                    <p className="font-bold text-white">Registration successful</p>
+                    <p className="mt-0.5 text-xs text-slate-300">{state.success}</p>
                     <div className="mt-3">
                       <Link
                         href="/login"
-                        className="inline-flex items-center gap-1.5 font-semibold text-emerald-400 underline underline-offset-4 hover:text-emerald-300"
+                        className="inline-flex items-center gap-1.5 font-bold text-primary underline underline-offset-4 hover:text-[#32e012]"
                       >
                         Proceed to Sign In &rarr;
                       </Link>
@@ -209,18 +209,18 @@ export default function SignUpPage() {
               )}
 
               <form action={formAction} className="space-y-5">
-                {/* Role Switcher - Precision EV Console Style */}
+                {/* Role Switcher */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Account Type <span className="text-emerald-400">*</span>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                    Account Type <span className="text-primary">*</span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* EV Driver Card */}
                     <label
                       className={`relative flex cursor-pointer flex-col rounded-2xl border p-4 transition-all duration-150 ${
                         selectedRole === "driver"
-                          ? "border-emerald-400 bg-emerald-500/[0.08] shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-400"
-                          : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]"
+                          ? "border-primary bg-primary/10 shadow-[0_0_20px_rgba(57,255,20,0.15)] ring-1 ring-primary"
+                          : "border-[#2C303B] bg-[#0F1115] hover:border-slate-500"
                       }`}
                     >
                       <input
@@ -235,8 +235,8 @@ export default function SignUpPage() {
                         <div
                           className={`flex h-9 w-9 items-center justify-center rounded-xl ${
                             selectedRole === "driver"
-                              ? "bg-emerald-400 text-slate-950 font-bold"
-                              : "bg-white/[0.06] text-slate-300"
+                              ? "bg-primary text-black font-bold"
+                              : "bg-[#242933] text-slate-300"
                           }`}
                         >
                           <Car className="h-5 w-5" />
@@ -244,7 +244,7 @@ export default function SignUpPage() {
                         <span
                           className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full ${
                             selectedRole === "driver"
-                              ? "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30"
+                              ? "bg-primary/20 text-primary border border-primary/30"
                               : "text-slate-500"
                           }`}
                         >
@@ -263,8 +263,8 @@ export default function SignUpPage() {
                     <label
                       className={`relative flex cursor-pointer flex-col rounded-2xl border p-4 transition-all duration-150 ${
                         selectedRole === "host"
-                          ? "border-cyan-400 bg-cyan-500/[0.08] shadow-[0_0_20px_rgba(6,182,212,0.15)] ring-1 ring-cyan-400"
-                          : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]"
+                          ? "border-cyan-400 bg-cyan-500/10 shadow-[0_0_20px_rgba(0,229,255,0.15)] ring-1 ring-cyan-400"
+                          : "border-[#2C303B] bg-[#0F1115] hover:border-slate-500"
                       }`}
                     >
                       <input
@@ -279,8 +279,8 @@ export default function SignUpPage() {
                         <div
                           className={`flex h-9 w-9 items-center justify-center rounded-xl ${
                             selectedRole === "host"
-                              ? "bg-cyan-400 text-slate-950 font-bold"
-                              : "bg-white/[0.06] text-slate-300"
+                              ? "bg-cyan-400 text-black font-bold"
+                              : "bg-[#242933] text-slate-300"
                           }`}
                         >
                           <PlugZap className="h-5 w-5" />
@@ -307,8 +307,8 @@ export default function SignUpPage() {
 
                 {/* Full Name */}
                 <div>
-                  <label htmlFor="name" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Full Name <span className="text-emerald-400">*</span>
+                  <label htmlFor="name" className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Full Name <span className="text-primary">*</span>
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
@@ -321,15 +321,15 @@ export default function SignUpPage() {
                       required
                       autoComplete="name"
                       placeholder="e.g. Ramesh Kumar"
-                      className="block w-full rounded-xl border border-white/[0.1] bg-slate-950/70 pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 transition-colors focus:border-emerald-400 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      className="block w-full rounded-xl border border-[#2C303B] bg-[#0F1115] pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </div>
 
                 {/* Email Address */}
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Email address <span className="text-emerald-400">*</span>
+                  <label htmlFor="email" className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Email address <span className="text-primary">*</span>
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
@@ -344,7 +344,7 @@ export default function SignUpPage() {
                       autoCapitalize="none"
                       spellCheck={false}
                       placeholder="driver@example.com"
-                      className="block w-full rounded-xl border border-white/[0.1] bg-slate-950/70 pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 transition-colors focus:border-emerald-400 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      className="block w-full rounded-xl border border-[#2C303B] bg-[#0F1115] pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </div>
@@ -352,7 +352,7 @@ export default function SignUpPage() {
                 {/* Phone Number */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="phone" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    <label htmlFor="phone" className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
                       Phone Number
                     </label>
                     <span className="text-[11px] text-slate-500">Optional</span>
@@ -368,7 +368,7 @@ export default function SignUpPage() {
                       autoComplete="tel"
                       inputMode="tel"
                       placeholder="+91 98765 43210"
-                      className="block w-full rounded-xl border border-white/[0.1] bg-slate-950/70 pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 transition-colors focus:border-emerald-400 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-emerald-400 font-mono"
+                      className="block w-full rounded-xl border border-[#2C303B] bg-[#0F1115] pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                     />
                   </div>
                 </div>
@@ -376,8 +376,8 @@ export default function SignUpPage() {
                 {/* Password with Show/Hide toggle */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="password" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                      Password <span className="text-emerald-400">*</span>
+                    <label htmlFor="password" className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                      Password <span className="text-primary">*</span>
                     </label>
                     <span className="text-[11px] text-slate-400 font-mono">Min. 6 chars</span>
                   </div>
@@ -393,12 +393,12 @@ export default function SignUpPage() {
                       autoComplete="new-password"
                       minLength={6}
                       placeholder="••••••••••••"
-                      className="block w-full rounded-xl border border-white/[0.1] bg-slate-950/70 pl-10 pr-11 py-3 text-sm text-white placeholder-slate-500 transition-colors focus:border-emerald-400 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-emerald-400 font-mono"
+                      className="block w-full rounded-xl border border-[#2C303B] bg-[#0F1115] pl-10 pr-11 py-3 text-sm text-white placeholder-slate-600 transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-white transition-colors focus:outline-none"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -410,11 +410,11 @@ export default function SignUpPage() {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all duration-150 hover:brightness-105 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-black text-black shadow-lg shadow-primary/25 transition-all duration-150 hover:bg-[#32e012] active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isPending ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                      <Loader2 className="h-4 w-4 animate-spin text-black" />
                       <span>Creating Account...</span>
                     </>
                   ) : (
@@ -427,12 +427,12 @@ export default function SignUpPage() {
               </form>
 
               {/* Bottom Switcher */}
-              <div className="mt-8 pt-6 text-center border-t border-white/[0.08]">
+              <div className="mt-8 pt-6 text-center border-t border-[#2C303B]">
                 <p className="text-sm text-slate-400">
                   Already have an account?{" "}
                   <Link
                     href="/login"
-                    className="font-semibold text-emerald-400 hover:text-emerald-300 hover:underline transition-colors"
+                    className="font-bold text-primary hover:underline transition-colors"
                   >
                     Sign in to your portal &rarr;
                   </Link>
@@ -444,7 +444,7 @@ export default function SignUpPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full border-t border-white/[0.06] bg-[#070A12]/80 px-4 py-5 text-center text-xs text-slate-500">
+      <footer className="relative z-10 w-full border-t border-[#2C303B] bg-canvas/80 px-4 py-5 text-center text-xs text-slate-500">
         <p>PlugNear &bull; Clean EV Mobility Infrastructure &bull; Protected by PostGIS and Atomic Exclusion Locking</p>
       </footer>
     </div>

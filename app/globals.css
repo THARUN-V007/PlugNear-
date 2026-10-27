@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-rgb: 248, 250, 252;
-  --pn-accent: 16, 185, 129;
-  --pn-accent-strong: 5, 150, 105;
-  --pn-sheen: 255, 255, 255;
+  --foreground-rgb: 241, 245, 249;  /* slate-100 */
+  --background-rgb: 15, 17, 21;     /* #0F1115 canvas */
+  --pn-accent: 57, 255, 20;         /* #39FF14 toxic bright green */
+  --pn-accent-strong: 43, 204, 16;  /* #2BCC10 */
+  --pn-sheen: 57, 255, 20;
 }
 
 html {
@@ -132,7 +132,7 @@ textarea {
 
 .leaflet-container {
   font: inherit;
-  background: #e9eef5;
+  background: #1a2332;  /* dark map bg */
 }
 
 .leaflet-popup-content-wrapper {
@@ -153,20 +153,22 @@ textarea {
 .leaflet-bar,
 .leaflet-control-zoom a {
   border-radius: 10px !important;
-  border-color: rgba(15, 23, 42, 0.08) !important;
-  color: #334155 !important;
+  border-color: rgba(44, 48, 59, 0.9) !important;
+  background: #181B22 !important;
+  color: #94a3b8 !important;
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .leaflet-control-zoom a:hover {
-  background: #ecfdf5 !important;
-  color: #047857 !important;
+  background: #1e2530 !important;
+  color: #39FF14 !important;
 }
 
 .leaflet-control-attribution {
   font-size: 10px;
   padding: 1px 6px;
-  background: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(24, 27, 34, 0.88) !important;
+  color: #64748b !important;
   backdrop-filter: blur(2px);
   border-top-left-radius: 8px;
 }
@@ -193,12 +195,12 @@ textarea {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.32);
+  background: rgba(44, 48, 59, 0.7);
   border-radius: 999px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.5);
+  background: rgba(57, 255, 20, 0.25);
 }
 
 /* ---------------------------------------------------------------------------

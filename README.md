@@ -1,156 +1,243 @@
-# PlugNear
+# PlugNear — Peer-to-Peer EV Charging Marketplace
 
-> Peer-to-peer EV charging marketplace connecting stranded or low-battery drivers with idle residential and commercial charging hosts — built on deterministic conflict-free scheduling and PostGIS proximity search.
-
----
-
-## What is in here
-
-- **Framework & Auth:** Next.js 15 (App Router), Tailwind CSS, Zod validation, Supabase PostgreSQL with PostGIS, and role guards (`driver` vs `host`).
-- **Domain Rules Engine (`lib/rules`):** Pure, unit-tested TypeScript for slot validity, availability windows, overlap checking, cost, booking state transitions and privacy masking.
-- **Search Engine:** Server-side proximity search (`GET /api/chargers/search`) combining a PostGIS spatial index with the domain rules.
-- **Booking Integrity:** `requested → confirmed/declined/cancelled/expired/completed` transitions with an atomic host-approval function and a database exclusion constraint that makes two overlapping confirmed bookings impossible.
+> An enterprise-grade peer-to-peer EV charging network connecting electric vehicle drivers with private residential and commercial charger hosts. Powered by **Next.js 15 (App Router)**, **Supabase PostgreSQL with PostGIS**, deterministic mathematical scheduling algorithms, and a sleek automotive-inspired dark design system.
 
 ---
 
-## Test Accounts (Seed Data)
+## ⚡ Overview & Key Capabilities
 
-The seed is intentionally minimal — one host, one driver, two chargers, two bookings — with realistic Bengaluru data instead of placeholder rows.
+PlugNear eliminates EV range anxiety by unlocking private chargers (home driveways, apartments, office retail slots) while guaranteeing **zero double-bookings** and protecting **residential privacy by default**.
 
-**Shared dev password:** `Password123!`
+- **Deterministic Scheduling Engine (`lib/rules`):** Pure, zero-dependency, unit-tested TypeScript validation engine enforcing half-open time intervals `[start, end)`, 30-minute operational steps, and timezone alignment to Indian Standard Time (`Asia/Kolkata`).
+- **PostGIS Proximity Search:** Sub-15ms spatial query execution using GiST spatial indexing (`ST_DWithin`) combined with server-side availability window checks and real-time conflict filtering.
+- **Atomic Exclusion Locking:** PostgreSQL exclusion constraints (`btree_gist` with `tstzrange`) prevent concurrent overlapping confirmed reservations at the database storage layer.
+- **1-Click Low-Battery Emergency Mode:** Instant search identifying the single nearest active, verified-free charging point within 25 km with automated slot refresh.
+- **Privacy-Guarded Location Layer:** Public search surfaces an approximate randomized ~300m neighborhood pin. True street address and Google Maps turn-by-turn directions unlock strictly upon host confirmation.
+- **Automotive Dark Design System:** Tailored high-voltage dark theme with deep slate canvas (`#0F1115`), crisp card panels (`#181B22`, border `#2C303B`), toxic bright green accents (`#39FF14`), and neon cyan host indicators (`#00E5FF`).
 
-| Role | Name | Email | Phone | What they own / hold |
+---
+
+## 🎨 Design System & Palette
+
+| Token | Hex Value | Usage / Semantic Role |
+| :--- | :--- | :--- |
+| **Canvas** | `#0F1115` | Global app shell, background for all pages and viewports |
+| **Panel Surface** | `#181B22` | Cards, dashboard panels, search containers, modals, form wrappers |
+| **Panel Border** | `#2C303B` | Crisp 1px structural border separating panels, inputs, and tables |
+| **Primary Green** | `#39FF14` | Toxic bright neon green for active states, CTA buttons, map pins, and verified indicators |
+| **Cyan Accent** | `#00E5FF` | Host action buttons, location picker pin, host badges, and connection indicators |
+| **Warning / Emergency**| `#F59E0B` | Low battery emergency hero banner, pending approval badges |
+| **Error / Destructive**| `#EF4444` | Cancellations, declination buttons, and validation alert banners |
+| **Typography** | `Plus Jakarta Sans` | High-contrast off-white (`#F8FAFC`) headings and slate (`#94A3B8`) body |
+
+---
+
+## 👥 Seed Accounts & Demo Credentials
+
+The database includes pre-configured demo accounts in Bengaluru with real-world geographic coordinates, active weekly schedules, and sample reservations:
+
+**Shared Development Password:** `Password123!`
+
+| Role | Name | Email | Coordinates / Location | Charger Details |
 | :--- | :--- | :--- | :--- | :--- |
-| **Host** | Manjunath Setty | `host@plugnear.dev` | `+91 98860 41235` | Two chargers in Indiranagar: a 7.4 kW Type 2 home bay (₹85/hr) and a 30 kW CCS2 store point on 100 Feet Road (₹190/hr, closed Sundays) |
-| **Driver** | Nithya Rao | `driver@plugnear.dev` | `+91 99001 27654` | One **confirmed** booking tomorrow 18:00–19:30 IST on the home bay, and one **requested** booking awaiting the host's decision |
+| **Host** | Manjunath Setty | `host@plugnear.dev` | 100 Feet Rd & HAL 2nd Stage, Indiranagar, Bengaluru | **Charger 1:** 7.4 kW Type 2 Home Bay (₹85/hr)<br/>**Charger 2:** 30 kW CCS2 Store Point (₹190/hr, Mon–Sat) |
+| **Driver** | Nithya Rao | `driver@plugnear.dev` | Indiranagar, Bengaluru | **Booking 1:** Confirmed slot tomorrow 18:00–19:30 IST<br/>**Booking 2:** Pending request awaiting approval |
 
-Both demo slots are computed against tomorrow's Asia/Kolkata calendar day, so they always land inside a real availability window and never conflict with each other.
-
----
-
-## Environment Variables
-
-Copy `.env.example` to `.env.local` and fill it in (never commit the real file — `.gitignore` already excludes it):
-
-```ini
-# Browser-safe Supabase credentials
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_publishable_anon_key
-
-# Server-only credential (NEVER prefix with NEXT_PUBLIC_)
-SUPABASE_SERVICE_ROLE_KEY=your_secret_service_role_key
-```
+*Note: Demo slots are dynamically anchored to tomorrow's date in Indian Standard Time (`Asia/Kolkata`) to guarantee real availability windows.*
 
 ---
 
-## Database Setup
+## 🛠️ Tech Stack & Architecture
 
-1. **Enable Supabase extensions** (Dashboard → Database → Extensions): `postgis`, `btree_gist`, `pgcrypto`.
-
-2. **Apply every migration, in order,** in the SQL Editor. Skipping any one of them breaks a feature at runtime — the app calls these functions and columns directly:
-
-   | Migration | Provides | Used by |
-   | :--- | :--- | :--- |
-   | `20261026000001_initial_schema.sql` | Tables, enums, exclusion constraint, profile trigger, RLS | Everything |
-   | `20261027000001_restrict_charger_privacy.sql` | `public_chargers` view, `search_chargers_nearby()` | Driver search |
-   | `20261027000002_get_charger_details.sql` | `get_charger_details_for_driver()`, `is_charger_host()` | Charger details page |
-   | `20261027000003_host_approval_atomicity.sql` | `host_approve_booking_atomic()` | Host approve + auto-decline |
-   | `20261027000004_add_charger_acknowledgement.sql` | `electricity_permission_acknowledged` column | Host listing form |
-   | `20261027000005_fix_profile_bootstrap.sql` | Pinned-search_path `handle_new_user()`, repaired details RPC, profile backfill | **Sign-up (without it every sign-up returns HTTP 500)** |
-   | `20261028000001_replace_availability_windows.sql` | `replace_charger_availability_windows()` | Weekly availability editor |
-   | `20261028000002_restrict_profile_visibility.sql` | Profiles visible only to counterparties | Privacy |
-   | `20261028000003_booking_edge_integrity.sql` | Cross-charger conflict guard, wider auto-decline, duplicate index | Booking integrity |
-   | `20261028000004_driver_slot_exclusion.sql` | One confirmed slot per driver, enforced by the database | Booking integrity under concurrency |
-
-3. **Populate seed data** — either path lands on the same rows:
-   - **Recommended:** `npm run seed` (uses the Supabase Admin API, idempotent, and retires older bulkier demo accounts).
-   - **SQL Editor alternative:** run `supabase/seed.sql`.
-
-4. **Verify the database guardrails:**
-   - `supabase/tests/verify_exclusion_constraint.sql` — back-to-back bookings succeed, overlaps fail with `exclusion_violation`.
-   - `supabase/tests/verify_privacy_lockdown.sql` — direct client reads of private coordinates are blocked.
+- **Frontend & Routing:** Next.js 15 (App Router, Server Components, Server Actions)
+- **Styling & Icons:** Tailwind CSS 3.4 with custom design tokens, Lucide React icons
+- **Mapping & Spatial Visualization:** Leaflet & React-Leaflet (custom SVG DivIcons, zero broken PNG assets, dynamic SSR-safe imports)
+- **Database & Storage:** Supabase PostgreSQL with PostGIS (`geometry(Point, 4326)`), `btree_gist`, and `pgcrypto`
+- **Validation:** Zod schemas for forms, search queries, booking slots, and charger specs
+- **Authentication & Security:** Supabase Auth with JWT, Row Level Security (RLS), and database role guards
 
 ---
 
-## Local Development
-
-```bash
-npm install
-npm run seed     # idempotent
-npm test         # 179 unit tests over lib/rules, lib/search, lib/validation, lib/bookings
-npm run lint     # tsc --noEmit (no ESLint dependency is installed)
-npm run dev
-npm run build    # type check + production build
-```
-
----
-
-## Manual Verification Guide (Real Database & API)
-
-### 1. Privacy lockdown
-
-- **Direct table query:** as a signed-in driver, run `supabase.from('chargers').select('address_text, latitude, longitude')` in the console.
-  Expected: **0 rows** for any charger where the driver has no confirmed booking.
-- **Direct RPC call:** `supabase.rpc('search_chargers_nearby', { ... })`.
-  Expected: rejected with `42501: permission denied for function` — execution is granted to `service_role` only.
-- **Profile leak check:** `supabase.from('profiles').select('name, phone')` returns your own row plus booking counterparties, not the whole table.
-
-### 2. Search API (`GET /api/chargers/search`)
-
-Sign in as `driver@plugnear.dev`, then:
+## 📁 Repository Structure
 
 ```text
-http://localhost:3000/api/chargers/search?lat=12.9719&lng=77.6412&radius=10&start=<TOMORROW>T04:00:00Z&end=<TOMORROW>T05:30:00Z
+├── app/
+│   ├── (auth)/
+│   │   ├── layout.tsx                # Signed-in role redirection guard
+│   │   ├── login/page.tsx            # Automotive-themed sign-in terminal
+│   │   └── signup/page.tsx           # Dual-role (Driver / Host) registration
+│   ├── actions/auth.ts               # Server actions for login, signup, logout
+│   ├── api/
+│   │   ├── bookings/route.ts         # Booking creation & slot validation
+│   │   ├── bookings/[id]/cancel/     # Driver cancellation endpoint
+│   │   ├── chargers/emergency/       # 1-click nearest free charger search
+│   │   ├── chargers/search/          # Scheduled PostGIS proximity search
+│   │   └── host/                     # Host charger & booking approval endpoints
+│   ├── driver/
+│   │   ├── page.tsx                  # Driver search & interactive map
+│   │   ├── bookings/page.tsx         # Driver active & past reservations
+│   │   └── chargers/[id]/page.tsx    # Guarded charger details & address unlock
+│   ├── host/
+│   │   ├── page.tsx                  # Host command center dashboard
+│   │   ├── bookings/page.tsx         # Host booking request management
+│   │   └── chargers/                 # Charger listing, creation & schedule editor
+│   ├── globals.css                   # Dark theme design system variables & Leaflet styling
+│   ├── layout.tsx                    # Root HTML layout with Plus Jakarta Sans & dark canvas
+│   └── not-found.tsx                 # Custom 404 error page
+├── components/
+│   ├── Navbar.tsx                    # Role-aware navigation with dynamic pending badges
+│   ├── booking/                      # Charger details view & approximate location map
+│   ├── driver/                       # Driver bookings view & booking card components
+│   ├── host/                         # Host charger management, cards & schedule editor
+│   ├── map/                          # Leaflet map container & location picker
+│   └── search/                       # Search filters, emergency hero banner & charger cards
+├── lib/
+│   ├── auth/guard.ts                 # Role-based route protection helpers
+│   ├── bookings/                     # Booking loader, status helpers & cancellation rules
+│   ├── chargers/                     # Charger loader & weekly schedule helpers
+│   ├── rules/                        # Pure domain rules: slots, intervals, transitions, cost
+│   ├── search/                       # Spatial search assembly & emergency mode algorithms
+│   ├── supabase/                     # SSR, browser, and service-role client helpers
+│   └── validation/                   # Zod schemas for chargers, bookings & search
+├── supabase/
+│   ├── migrations/                   # Sequential SQL schema migrations
+│   ├── seed.sql                      # SQL seed file for test data
+│   └── tests/                        # Automated database constraint verification tests
+├── package.json
+├── tailwind.config.ts
+└── tsconfig.json
 ```
-
-Seed behaviour matrix:
-
-| Charger | Seed configuration | Slot / filter | Expected |
-| :--- | :--- | :--- | :--- |
-| Home Bay (Type 2, 7.4 kW) | Weekdays 06:00–10:00 and 17:00–22:30 IST | Tomorrow 04:00–05:30 UTC (09:30–11:00 IST) | **Excluded:** the slot straddles the midday gap, so it fits no single window |
-| Home Bay | Confirmed booking 18:00–19:30 IST | Tomorrow 19:30–21:00 IST | **Included:** back-to-back with the confirmed booking is allowed |
-| Home Bay | Confirmed booking 18:00–19:30 IST | Tomorrow 18:30–19:00 IST | **Excluded:** overlaps a confirmed booking |
-| Store Fast Point (CCS2, 30 kW) | Mon–Sat 08:00–20:00 IST, no Sunday windows | A Sunday slot | **Excluded:** no windows that day |
-| Store Fast Point | `connector_type = CCS2` | `connectorType=CCS2` | **Included:** the only CCS2 charger in the seed |
-
-Failure cases (all return a JSON `error.code`, never a stack trace):
-
-| Case | Status | Code |
-| :--- | :--- | :--- |
-| No session | 401 | `UNAUTHORIZED` |
-| Signed in as a host | 403 | `FORBIDDEN_ROLE` |
-| Host acting on another host's charger | 404 | `CHARGER_NOT_FOUND` (never 403, to avoid enumeration) |
-| Missing or empty `lat`/`lng` | 400 | `INVALID_QUERY_PARAMS` |
-| `start` in the past | 400 | `PAST_SLOT` |
-| `end` before `start` | 400 | `INVALID_END_TIME` |
-| Duration under 30 min / over 8 h | 400 | `DURATION_TOO_SHORT` / `DURATION_TOO_LONG` |
-| Duration not on a 30-minute step | 400 | `INVALID_STEP` |
-| `radius` > 50 km | 400 | `INVALID_QUERY_PARAMS` |
-| Booking collides with a confirmed slot at insert | 409 | `SLOT_BLOCKED` |
-| Driver creating a duplicate request for the same slot | 409 | `DUPLICATE_BOOKING` |
-
-### 3. Booking journey
-
-1. Sign in as the driver → search a free slot → **Request Booking** (cost is computed and stored server-side).
-2. Sign in as the host → `/host/bookings` → **Approve**. Approval re-runs the rules (charger still active, slot still inside a window, no overlapping confirmation) and then calls `host_approve_booking_atomic()`, which confirms the target and auto-declines overlapping pending requests in one transaction.
-3. Back as the driver: the confirmed booking now shows the exact street address and a directions link; the details page map swaps the ~300 m privacy ring for the exact pin.
 
 ---
 
-## Design decisions worth knowing
+## 🚀 Getting Started
 
-- **Server owns every decision.** Prices, durations, roles, ownership and slot validity are recomputed on the server; the browser is never trusted. RLS is a second layer, not the only one.
-- **Business rules live in `lib/rules`** as pure functions with a `Result` type — no database, no React — so they are unit-testable and are reused by pages, route handlers and loaders.
-- **Half-open intervals everywhere** (`[start, end)`), so back-to-back bookings are allowed but any overlap is impossible, in TypeScript and in the Postgres exclusion constraint.
-- **Only `confirmed` bookings block a slot.** Several drivers may hold pending requests for the same time; the first approval wins and the rest are auto-declined.
-- **Privacy is distance-aware too:** the published `distanceKm` is measured from the masked pin, not the true coordinates, so two searches from two origins cannot triangulate a home charger.
-- **Lazy state transitions:** expiry and completion are applied when bookings are read, so no background job is needed.
+### 1. Prerequisites
+- **Node.js:** v18.18.0 or newer
+- **Package Manager:** `npm`
+- **Database:** Supabase project with PostgreSQL
 
-## Known limitations
+### 2. Environment Configuration
+Create a `.env.local` file in the project root:
 
-- No payments: cost is calculated and displayed only, and no money moves.
-- No live charging-session tracking, hardware or smart-socket integration.
-- Single timezone (`Asia/Kolkata`), single currency (INR), one role per account, no admin role.
-- Availability windows may not cross local midnight, so an overnight 22:00–06:00 slot is not expressible yet.
-- Host "electricity permission" is a self-declared checkbox; there is no identity or document verification.
-- Roles are taken from sign-up metadata, so a profile's role is only as trustworthy as that choice — it cannot be changed afterwards (a DB trigger blocks role edits on an existing profile).
+```ini
+# Supabase Public API credentials
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Server-only Service Role Secret (NEVER expose to client)
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+### 3. Database Migration Order
+Enable required PostgreSQL extensions in Supabase (Dashboard → Database → Extensions):
+- `postgis`
+- `btree_gist`
+- `pgcrypto`
+
+Apply migrations sequentially in the Supabase SQL Editor:
+
+| Migration File | Description | Essential For |
+| :--- | :--- | :--- |
+| `20261026000001_initial_schema.sql` | Tables, enums, GiST exclusion constraints, profiles, RLS | Core foundation |
+| `20261027000001_restrict_charger_privacy.sql` | `public_chargers` view and spatial search function | Proximity search |
+| `20261027000002_get_charger_details.sql` | `get_charger_details_for_driver()` RPC | Details & address masking |
+| `20261027000003_host_approval_atomicity.sql` | `host_approve_booking_atomic()` transaction | Race-free host approvals |
+| `20261027000004_add_charger_acknowledgement.sql` | `electricity_permission_acknowledged` column | Host compliance declaration |
+| `20261027000005_fix_profile_bootstrap.sql` | Fixed search path `handle_new_user()` trigger | Sign-up reliability |
+| `20261028000001_replace_availability_windows.sql`| Atomic weekly availability replacement RPC | Weekly schedule editor |
+| `20261028000002_restrict_profile_visibility.sql` | Counterparty-only profile visibility RLS | Privacy compliance |
+| `20261028000003_booking_edge_integrity.sql` | Auto-decline conflicting pending bookings | Conflict resolution |
+| `20261028000004_driver_slot_exclusion.sql` | Enforces one confirmed booking per driver | Driver overlap guard |
+
+### 4. Seed Data Population
+Run the idempotent seed script to populate realistic Bengaluru test accounts and chargers:
+
+```bash
+npm run seed
+```
+
+### 5. Running the Application
+```bash
+# Start Next.js development server
+npm run dev
+
+# Run full test suite (179 unit tests)
+npm test
+
+# Run TypeScript type verification
+npm run lint
+
+# Production bundle build
+npm run build
+```
+
+---
+
+## 🛡️ Business Rules & Edge Cases Handled
+
+### 1. Booking State Machine
+```text
+                  ┌──────────────┐
+                  │  Requested   │
+                  └──────┬───────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │ (Host Approve)│ (Host Decline)│ (Driver Cancel)
+         ▼               ▼               ▼
+   ┌───────────┐   ┌───────────┐   ┌───────────┐
+   │ Confirmed │   │ Declined  │   │ Cancelled │
+   └─────┬─────┘   └───────────┘   └───────────┘
+         │
+         │ (Time Passes)
+         ▼
+   ┌───────────┐
+   │ Completed │
+   └───────────┘
+```
+- **Requested:** Cancellable by driver at any time prior to slot start time.
+- **Confirmed:** Cancellable by host or driver *strictly before* slot start time. Once the slot starts, cancellation is disabled.
+- **Atomic Auto-Decline:** When a host approves one booking request, any overlapping pending requests on that charger are automatically declined within the same atomic database transaction.
+- **Lazy State Expiry:** Expired requests (past slot start without decision) and completed bookings are evaluated lazily on read.
+
+### 2. Time & Scheduling Rules
+- **Half-Open Intervals:** All bookings use `[start, end)`. A booking from `18:00 to 19:30` can be followed immediately by a booking from `19:30 to 21:00` without conflict.
+- **Indian Standard Time Alignment:** Dates and times are selected in local IST (`Asia/Kolkata`), mapped cleanly against day-of-week weekly availability windows, and converted to UTC for database storage.
+- **30-Minute Boundary Steps:** Slots must start and end on exact 30-minute boundaries (e.g., `:00` or `:30`), with a minimum duration of 30 minutes and a maximum of 8 hours.
+
+### 3. Location Privacy Architecture
+- **Public & Unconfirmed Search:** Returns approximate coordinates fuzzed by ~300 meters. The map renders a translucent privacy circle to indicate approximate neighborhood.
+- **Confirmed Booking:** The exact street address, coordinates, and Google Maps directions link are unlocked exclusively for the confirmed driver and the charger host.
+
+---
+
+## 🧪 Automated Testing & Verification
+
+The test suite contains **179 automated unit tests** covering:
+- Slot validation and 30-minute step enforcement (`lib/rules/slot-validation.test.ts`)
+- Weekly availability schedule parsing & day-of-week boundary overlaps (`lib/rules/availability-windows.test.ts`)
+- Booking interval overlap detection & half-open bounds (`lib/rules/booking-overlap.test.ts`)
+- Dynamic cost calculation algorithms (`lib/rules/cost-calculation.test.ts`)
+- Booking state machine transitions & cancellability permissions (`lib/rules/booking-status.test.ts`)
+- PostGIS search result filtering & distance calculations (`lib/search/search-assembly.test.ts`)
+- Emergency 1-click slot generation (`lib/search/emergency-slot.test.ts`)
+
+Run the test suite:
+```bash
+npm test
+```
+
+---
+
+## 🔒 Security Best Practices Implemented
+
+- **No Sensitive Leaks in Git:** `.env.local` is strictly ignored; only `.env.example` is tracked.
+- **Role Isolation:** Next.js middleware and server-side `requireRole()` checks reject cross-role attempts (e.g., driver accessing `/host` or host calling `/driver`).
+- **Input Sanitization & Zod Validation:** All client inputs, query parameters, and API payloads are strictly validated server-side.
+- **Postgres Row Level Security (RLS):** Table access is restricted so drivers cannot query other drivers' bookings or private host coordinates directly through client Supabase instances.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.

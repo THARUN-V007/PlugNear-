@@ -19,9 +19,6 @@ export default async function ChargerDetailsPage({
   const { id } = await params;
   const sParams = await searchParams;
 
-  // Validate the query string on the server like every other input (spec §9).
-  // An unparseable slot is dropped rather than trusted; a malformed timestamp
-  // reaching the loader would otherwise surface as an invalid Date.
   const query = ChargerDetailsQuerySchema.safeParse({
     startAt: typeof sParams.startAt === "string" ? sParams.startAt : undefined,
     endAt: typeof sParams.endAt === "string" ? sParams.endAt : undefined,
@@ -45,22 +42,22 @@ export default async function ChargerDetailsPage({
 
   if (!loadResult.success) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-canvas flex flex-col">
         <Navbar profile={profile} email={user.email} />
 
         <main className="flex-1 mx-auto max-w-3xl px-4 py-16 sm:px-6 w-full text-center">
-          <div className="rounded-3xl bg-white p-8 sm:p-12 border border-slate-200 shadow-sm space-y-4">
-            <PlugZap className="h-8 w-8 text-slate-300" strokeWidth={1.5} aria-hidden />
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+          <div className="rounded-3xl bg-[#181B22] p-8 sm:p-12 border border-[#2C303B] shadow-lg space-y-4">
+            <PlugZap className="h-8 w-8 text-slate-500 mx-auto" strokeWidth={1.5} aria-hidden />
+            <h1 className="text-xl sm:text-2xl font-black text-white font-display">
               Charging Point Not Found
             </h1>
-            <p className="text-sm text-slate-600 max-w-md mx-auto">
+            <p className="text-sm text-slate-400 max-w-md mx-auto">
               We couldn't locate this charging point. It may have been removed or the link is invalid.
             </p>
             <div className="pt-4">
               <Link
                 href="/driver"
-                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black text-black shadow-lg shadow-primary/20 hover:bg-[#32e012] transition"
               >
                 &larr; Return to Driver Search
               </Link>
@@ -74,10 +71,10 @@ export default async function ChargerDetailsPage({
   const { charger, windows, validation } = loadResult.data;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
       <Navbar profile={profile} email={user.email} />
 
-      <main className="flex-1 mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 w-full">
+      <main className="flex-1 mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 w-full">
         <ChargerDetailsView
           charger={charger}
           windows={windows}

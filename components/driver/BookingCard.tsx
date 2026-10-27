@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { ArrowRight, MapPin, PlugZap, ShieldCheck, Zap } from "lucide-react";
 import {
   type DriverBookingItem,
@@ -84,27 +83,27 @@ export default function BookingCard({
 
   return (
     <div
-      className={`rounded-3xl border bg-white p-5 sm:p-6 shadow-xs transition hover:shadow-md ${
+      className={`rounded-3xl border bg-[#181B22] p-5 sm:p-6 transition shadow-md ${
         booking.status === "confirmed"
-          ? "border-emerald-300 ring-1 ring-emerald-200"
-          : "border-slate-200"
+          ? "border-primary/50 shadow-[0_0_20px_rgba(57,255,20,0.12)]"
+          : "border-[#2C303B]"
       }`}
     >
       {/* 1. Header: Title, Connector, and Status Badge */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
-              <PlugZap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#2C303B] bg-[#242933] px-2.5 py-1 text-[11px] font-bold text-slate-300">
+              <PlugZap className="h-3.5 w-3.5 text-cyan-400" strokeWidth={2} aria-hidden />
               {booking.connectorType}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-black text-primary">
               <Zap className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               {booking.powerKw} kW
             </span>
           </div>
 
-          <h3 className="text-lg font-black text-slate-900 line-clamp-1">
+          <h3 className="text-lg font-black text-white line-clamp-1 mt-1 font-display">
             {booking.chargerTitle}
           </h3>
         </div>
@@ -115,7 +114,7 @@ export default function BookingCard({
           >
             {badge.label}
           </span>
-          <p className="mt-1 text-xs sm:text-sm font-black text-slate-900">
+          <p className="mt-1 text-sm sm:text-base font-black text-white">
             ₹{booking.totalCost.toFixed(2)}
           </p>
         </div>
@@ -123,35 +122,35 @@ export default function BookingCard({
 
       {/* 2. Status Help Text */}
       {badge.helpText && (
-        <p className="mt-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+        <p className="mt-3 text-xs text-slate-400 bg-[#0F1115] px-3.5 py-2 rounded-xl border border-[#2C303B]">
           {badge.helpText}
         </p>
       )}
 
       {/* 3. Slot Schedule Details */}
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50/70 p-3.5 rounded-2xl border border-slate-100">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#0F1115] p-3.5 rounded-2xl border border-[#2C303B]">
         <div>
-          <span className="text-slate-400 font-medium">Date (IST)</span>
-          <p className="font-bold text-slate-900">{formatISTDate(booking.startAt)}</p>
+          <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider block">Date (IST)</span>
+          <p className="font-bold text-slate-100 mt-0.5">{formatISTDate(booking.startAt)}</p>
         </div>
         <div>
-          <span className="text-slate-400 font-medium">Time (IST)</span>
-          <p className="font-bold text-slate-900">
+          <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider block">Time (IST)</span>
+          <p className="font-bold text-slate-100 mt-0.5">
             {formatISTTime(booking.startAt)} &ndash; {formatISTTime(booking.endAt)} ({durationMinutes} mins)
           </p>
         </div>
       </div>
 
       {/* 4. Privacy Guarded Location Display */}
-      <div className="mt-4 pt-3 border-t border-slate-100">
+      <div className="mt-4 pt-3 border-t border-[#2C303B]">
         {booking.exactAddress ? (
-          <div className="rounded-2xl bg-emerald-50/70 p-3.5 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="rounded-2xl bg-primary/10 p-3.5 border border-primary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-                <MapPin className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-primary">
+                <MapPin className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
                 Confirmed Street Address
               </span>
-              <p className="text-xs font-bold text-slate-900">{booking.exactAddress}</p>
+              <p className="text-xs font-bold text-white">{booking.exactAddress}</p>
             </div>
 
             {booking.directionsUrl && (
@@ -159,7 +158,7 @@ export default function BookingCard({
                 href={booking.directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition shrink-0"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-black text-black shadow-md shadow-primary/20 hover:bg-[#32e012] transition shrink-0"
               >
                 <span>Get Directions</span>
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -167,11 +166,11 @@ export default function BookingCard({
             )}
           </div>
         ) : (
-          <div className="rounded-2xl bg-slate-50 p-3 border border-slate-100 flex items-start gap-2 text-xs text-slate-500">
-            <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.75} aria-hidden />
+          <div className="rounded-2xl bg-[#0F1115] p-3 border border-[#2C303B] flex items-start gap-2 text-xs text-slate-400">
+            <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-cyan-400" strokeWidth={1.75} aria-hidden />
             <div>
-              <span className="font-semibold text-slate-700">Approximate Location</span>
-              <p className="text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-200">Approximate Location</span>
+              <p className="text-[11px] text-slate-400 mt-0.5">
                 Exact street address and map directions unlock after the host confirms your booking.
               </p>
             </div>
@@ -181,26 +180,26 @@ export default function BookingCard({
 
       {/* 5. Error Message */}
       {errorMsg && (
-        <div className="mt-3 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-800 border border-rose-200">
+        <div className="mt-3 rounded-xl bg-rose-950/40 p-2.5 text-xs text-rose-300 border border-rose-800">
           {errorMsg}
         </div>
       )}
 
       {/* 6. Cancellation Section */}
       {isCancellable && (
-        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-[#2C303B] flex items-center justify-between">
           {!showConfirm ? (
             <button
               type="button"
               disabled={isCancelling}
               onClick={() => setShowConfirm(true)}
-              className="text-xs font-bold text-rose-600 hover:text-rose-800 transition py-1"
+              className="text-xs font-bold text-rose-400 hover:text-rose-300 transition py-1"
             >
               Cancel Booking
             </button>
           ) : (
-            <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-rose-50 p-3 rounded-2xl border border-rose-200 animate-in fade-in duration-200">
-              <span className="text-xs font-bold text-rose-900">
+            <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-rose-950/40 p-3 rounded-2xl border border-rose-800 animate-in fade-in duration-200">
+              <span className="text-xs font-bold text-rose-200">
                 Are you sure you want to cancel?
               </span>
 
@@ -209,7 +208,7 @@ export default function BookingCard({
                   type="button"
                   disabled={isCancelling}
                   onClick={() => setShowConfirm(false)}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50 transition"
+                  className="rounded-lg bg-[#181B22] px-3 py-1.5 text-xs font-semibold text-slate-300 border border-[#2C303B] hover:bg-[#242933] transition"
                 >
                   Keep Booking
                 </button>

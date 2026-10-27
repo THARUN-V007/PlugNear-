@@ -24,8 +24,8 @@ function createPickerPinIcon() {
     className: "custom-location-pin",
     html: `
       <div style="position: relative; width: 36px; height: 36px; transform: translate(-50%, -100%);">
-        <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50% 50% 50% 0; background: #9333ea; transform: rotate(-45deg); border: 2.5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
-          <span style="transform: rotate(45deg); color: white; font-size: 16px; font-weight: bold;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+        <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50% 50% 50% 0; background: #00E5FF; transform: rotate(-45deg); border: 2.5px solid #0F1115; box-shadow: 0 0 15px rgba(0,229,255,0.5);">
+          <span style="transform: rotate(45deg); color: #000; font-size: 16px; font-weight: bold;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
         </div>
       </div>
     `,
@@ -101,7 +101,7 @@ export default function LocationPickerMap({
   };
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-slate-300 shadow-xs">
+    <div className="relative w-full rounded-2xl overflow-hidden border border-[#2C303B] shadow-inner">
       {/* 1. Leaflet Map Container */}
       <div className="h-64 sm:h-72 w-full z-0">
         <MapContainer
@@ -145,26 +145,26 @@ export default function LocationPickerMap({
           type="button"
           onClick={handleUseMyLocation}
           disabled={isLocating}
-          className="rounded-xl border border-slate-300 bg-white/95 backdrop-blur-xs px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 flex items-center gap-1.5"
+          className="rounded-xl border border-[#2C303B] bg-[#181B22]/90 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-slate-200 shadow-md transition hover:bg-[#242933] focus:outline-none focus:ring-1 focus:ring-cyan-400 disabled:opacity-50 flex items-center gap-1.5"
         >
-          <span aria-hidden>&bull;</span>
+          <span className="text-cyan-400" aria-hidden>&bull;</span>
           {isLocating ? "Finding..." : "Use my location"}
         </button>
         {geoError && (
-          <span className="rounded-lg bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200 shadow-xs">
+          <span className="rounded-lg bg-rose-950/60 px-2 py-0.5 text-[10px] font-semibold text-rose-300 border border-rose-800 shadow-xs">
             {geoError}
           </span>
         )}
       </div>
 
       {/* 3. Bottom Coordinates Bar */}
-      <div className="bg-slate-50 border-t border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
-        <span className="font-semibold text-slate-700 flex items-center gap-1">
+      <div className="bg-[#181B22] border-t border-[#2C303B] px-4 py-2.5 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+        <span className="font-semibold text-slate-300 flex items-center gap-1">
           Click the map or drag the pin to position the charger
         </span>
-        <div className="font-mono text-[11px] bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 shadow-2xs">
-          Lat: <span className="font-bold text-cyan-700">{effectiveLat.toFixed(5)}</span> | Lng:{" "}
-          <span className="font-bold text-cyan-700">{effectiveLng.toFixed(5)}</span>
+        <div className="font-mono text-[11px] bg-[#0F1115] border border-[#2C303B] rounded-lg px-2.5 py-1 text-slate-400">
+          Lat: <span className="font-bold text-cyan-400">{effectiveLat.toFixed(5)}</span> | Lng:{" "}
+          <span className="font-bold text-cyan-400">{effectiveLng.toFixed(5)}</span>
         </div>
       </div>
     </div>
