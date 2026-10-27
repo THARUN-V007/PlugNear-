@@ -2,323 +2,310 @@ import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
 
-// 1. Read environment variables from .env.local
+// ---------------------------------------------------------------------------
+// PlugNear seed — minimal but realistic demo data.
+// One host, one driver, two chargers, two bookings (plus weekly windows).
+// Everything is keyed on fixed ids/emails so re-running is idempotent.
+// ---------------------------------------------------------------------------
+
 const envPath = path.resolve(process.cwd(), ".env.local");
 if (!fs.existsSync(envPath)) {
-  console.error("❌ ERROR: .env.local not found! Ensure .env.local exists with SUPABASE_SERVICE_ROLE_KEY.");
+  console.error("ERROR: .env.local not found. It must contain NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
   process.exit(1);
 }
 
-const envContent = fs.readFileSync(envPath, "utf-8");
 const env = {};
-for (const line of envContent.split("\n")) {
+for (const line of fs.readFileSync(envPath, "utf-8").split("\n")) {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith("#")) continue;
   const eqIdx = trimmed.indexOf("=");
-  if (eqIdx !== -1) {
-    const key = trimmed.slice(0, eqIdx).trim();
-    const val = trimmed.slice(eqIdx + 1).trim();
-    env[key] = val;
-  }
+  if (eqIdx !== -1) env[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
 }
 
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
 const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error("❌ ERROR: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local");
+  console.error("ERROR: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local");
   process.exit(1);
 }
 
-const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+const admin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
 const SEED_PASSWORD = "Password123!";
 
-const SEED_USERS = [
-  {
-    email: "host1@plugnear.dev",
-    password: SEED_PASSWORD,
-    name: "Arun Host",
-    role: "host",
-    phone: "+91 98450 11111",
-  },
-  {
-    email: "host2@plugnear.dev",
-    password: SEED_PASSWORD,
-    name: "Priya Host",
-    role: "host",
-    phone: "+91 98450 22222",
-  },
-  {
-    email: "driver1@plugnear.dev",
-    password: SEED_PASSWORD,
-    name: "Vikram Driver",
-    role: "driver",
-    phone: "+91 98450 33333",
-  },
-  {
-    email: "driver2@plugnear.dev",
-    password: SEED_PASSWORD,
-    name: "Ananya Driver",
-    role: "driver",
-    phone: "+91 98450 44444",
-  },
+const HOST = {
+  email: "host@plugnear.dev",
+  name: "Manjunath Setty",
+  role: "host",
+  phone: "+91 98860 41235",
+};
+
+const DRIVER = {
+  email: "driver@plugnear.dev",
+  name: "Nithya Rao",
+  role: "driver",
+  phone: "+91 99001 27654",
+};
+
+// Retired demo accounts from earlier, bulkier seed revisions. Removed so the
+// demo shows exactly one host and one driver.
+const LEGACY_EMAILS = [
+  "host1@plugnear.dev",
+  "host2@plugnear.dev",
+  "driver1@plugnear.dev",
+  "driver2@plugnear.dev",
+  "host1@plugnear.local",
+  "host2@plugnear.local",
+  "driver1@plugnear.local",
+  "driver2@plugnear.local",
 ];
 
-async function seed() {
-  console.log("🌱 Starting idempotent PlugNear seed process...\n");
+const CHARGER_HOME_ID = "a1111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const CHARGER_STORE_ID = "a2222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const BOOKING_CONFIRMED_ID = "b1111111-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const BOOKING_PENDING_ID = "b2222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
-  // Step 1: Fetch all existing auth users
-  const { data: listData, error: listErr } = await adminClient.auth.admin.listUsers();
-  if (listErr) {
-    console.error("❌ Failed to list existing auth users:", listErr.message);
-    process.exit(1);
-  }
+const IST_OFFSET_MS = 330 * 60_000;
 
-  const existingUsers = listData?.users || [];
-  const userMap = new Map(); // email -> userId
+// Asia/Kolkata calendar parts of a UTC instant.
+function istParts(utcDate) {
+  const shifted = new Date(utcDate.getTime() + IST_OFFSET_MS);
+  return { date: shifted.toISOString().slice(0, 10), weekday: shifted.getUTCDay() };
+}
 
-  // Step 2: Create or update each seeded user via Admin API
-  for (const u of SEED_USERS) {
-    const existing = existingUsers.find((x) => x.email === u.email);
+// A UTC instant for tomorrow's Asia/Kolkata wall-clock time.
+function istTomorrow(hh, mm) {
+  return new Date(`${istParts(new Date(Date.now() + 24 * 3600_000)).date}T${hh}:${mm}:00+05:30`);
+}
 
-    if (existing) {
-      // Update password and confirm email to ensure clean credentials
-      const { data: updated, error: updateErr } = await adminClient.auth.admin.updateUserById(
-        existing.id,
-        {
-          password: u.password,
-          email_confirm: true,
-          user_metadata: {
-            name: u.name,
-            role: u.role,
-            phone: u.phone,
-          },
-        }
-      );
-
-      if (updateErr) {
-        console.error(`⚠️ Failed to update ${u.email}:`, updateErr.message);
-      } else {
-        console.log(`✅ Updated existing user: ${u.email} (Role: ${u.role})`);
-        userMap.set(u.email, existing.id);
-      }
-    } else {
-      // Create user with pre-confirmed email
-      const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
-        email: u.email,
-        password: u.password,
-        email_confirm: true,
-        user_metadata: {
-          name: u.name,
-          role: u.role,
-          phone: u.phone,
-        },
-      });
-
-      if (createErr) {
-        console.error(`❌ Failed to create ${u.email}:`, createErr.message);
-      } else if (created.user) {
-        console.log(`✅ Created user: ${u.email} (Role: ${u.role})`);
-        userMap.set(u.email, created.user.id);
-      }
-    }
-  }
-
-  // Step 3: Check if public tables exist
-  const { error: profileCheckError } = await adminClient.from("profiles").select("id").limit(1);
-
-  if (profileCheckError) {
-    console.log(`\n⚠️ Notice: Public database tables (profiles, chargers, etc.) are not yet present in Supabase.`);
-    console.log(`👉 Please execute the migration SQL files in the Supabase Dashboard SQL Editor:`);
-    console.log(`   1. supabase/migrations/20261026000001_initial_schema.sql`);
-    console.log(`   2. supabase/migrations/20261027000001_restrict_charger_privacy.sql`);
-    console.log(`Once applied, re-run 'npm run seed' to populate chargers, windows, and bookings!\n`);
-    return;
-  }
-
-  // Step 4: Ensure profiles exist and are synced
-  for (const u of SEED_USERS) {
-    const userId = userMap.get(u.email);
-    if (!userId) continue;
-
-    const { error: profErr } = await adminClient.from("profiles").upsert(
-      {
-        id: userId,
-        name: u.name,
-        role: u.role,
-        phone: u.phone,
-      },
-      { onConflict: "id" }
-    );
-
-    if (profErr) {
-      console.warn(`⚠️ Profile sync warning for ${u.email}:`, profErr.message);
-    }
-  }
-
-  const host1Id = userMap.get("host1@plugnear.dev");
-  const host2Id = userMap.get("host2@plugnear.dev");
-  const driver1Id = userMap.get("driver1@plugnear.dev");
-  const driver2Id = userMap.get("driver2@plugnear.dev");
-
-  if (!host1Id || !host2Id) {
-    console.log("⚠️ Host IDs missing; skipping charger seed.");
-    return;
-  }
-
-  // Step 5: Upsert 5 Seed Chargers in Indiranagar, Bengaluru
-  const chargers = [
+function chargersFor(hostId) {
+  return [
     {
-      id: "a1111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      host_id: host1Id,
-      title: "100ft Road Fast Charger",
-      address_text: "123, 100 Feet Rd, Indiranagar, Bengaluru, Karnataka 560038",
-      latitude: 12.9719,
-      longitude: 77.6412,
-      connector_type: "Type 2",
-      power_kw: 22.0,
-      price_per_hour: 120.0,
-      host_connection_type: "dedicated_ev",
-      notes: "Dedicated basement parking bay. Access card available with security.",
-      is_active: true,
-      electricity_permission_acknowledged: true,
-    },
-    {
-      id: "a2222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      host_id: host1Id,
-      title: "Indiranagar Home Socket",
-      address_text: "456, 1st Cross, Indiranagar 1st Stage, Bengaluru, Karnataka 560038",
-      latitude: 12.975,
-      longitude: 77.644,
-      connector_type: "Bharat AC-001",
-      power_kw: 3.3,
-      price_per_hour: 50.0,
-      host_connection_type: "domestic",
-      notes: "Driveway socket. Ring the bell on arrival.",
-      is_active: true,
-      electricity_permission_acknowledged: true,
-    },
-    {
-      id: "a3333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      host_id: host2Id,
-      title: "Defence Colony CCS2 Hub",
-      address_text: "789, 5th Main, Defence Colony, Indiranagar, Bengaluru, Karnataka 560038",
-      latitude: 12.978,
-      longitude: 77.638,
-      connector_type: "CCS2",
-      power_kw: 50.0,
-      price_per_hour: 250.0,
-      host_connection_type: "commercial",
-      notes: "Commercial courtyard fast charger. 24x7 gate guard.",
-      is_active: true,
-      electricity_permission_acknowledged: true,
-    },
-    {
-      id: "a4444444-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      host_id: host2Id,
-      title: "12th Main AC Point",
-      address_text: "321, 12th Main Rd, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560008",
-      latitude: 12.969,
-      longitude: 77.645,
+      id: CHARGER_HOME_ID,
+      host_id: hostId,
+      title: "Home Bay Charger - Indiranagar 1st Stage",
+      address_text: "No. 24, 4th Cross Rd, Indiranagar 1st Stage, Bengaluru, Karnataka 560038",
+      latitude: 12.9755,
+      longitude: 77.6395,
       connector_type: "Type 2",
       power_kw: 7.4,
-      price_per_hour: 80.0,
-      host_connection_type: "dedicated_ev",
-      notes: "Covered porch slot with Type 2 tethered cable.",
+      price_per_hour: 85.0,
+      host_connection_type: "domestic",
+      notes:
+        "Covered ground-floor bay behind the main gate with a 6 m tethered Type 2 cable. Ring the intercom for Manjunath - the socket breaker is the third switch in the meter box by the door. Slow but dependable; good for topping up while you are at work or overnight.",
       is_active: true,
       electricity_permission_acknowledged: true,
     },
     {
-      id: "a5555555-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      host_id: host1Id,
-      title: "CMH Road DC Fast Station (Under Maintenance)",
-      address_text: "CMH Road, Indiranagar, Bengaluru 560038",
-      latitude: 12.9782,
-      longitude: 77.6390,
+      id: CHARGER_STORE_ID,
+      host_id: hostId,
+      title: "Store Fast Point - 100 Feet Road",
+      address_text: "Shop No. 7, 100 Feet Rd, near Trinity Metro, Indiranagar, Bengaluru, Karnataka 560008",
+      latitude: 12.9784,
+      longitude: 77.6403,
       connector_type: "CCS2",
       power_kw: 30.0,
-      price_per_hour: 220.0,
+      price_per_hour: 190.0,
       host_connection_type: "commercial",
-      notes: "Currently inactive for firmware calibration.",
-      is_active: false,
+      notes:
+        "Customer parking bay behind the store shutter on a commercial meter. Open whenever the shop is, closed Sundays. Ask for the charging bay at the counter - staff will walk you through, and coffee is available next door while you wait.",
+      is_active: true,
       electricity_permission_acknowledged: true,
     },
   ];
+}
 
-  for (const c of chargers) {
-    const { error: chgErr } = await adminClient.from("chargers").upsert(c, { onConflict: "id" });
-    if (chgErr) console.warn(`⚠️ Charger upsert warning for ${c.title}:`, chgErr.message);
-  }
-  console.log(`✅ Upserted ${chargers.length} chargers`);
+// Two realistic availability shapes: a weekday-away-from-home split schedule,
+// and store hours with no Sunday service.
+const WINDOWS_HOME = [
+  { day_of_week: 0, slots: [["06:00", "22:30"]] },
+  { day_of_week: 1, slots: [["06:00", "10:00"], ["17:00", "22:30"]] },
+  { day_of_week: 2, slots: [["06:00", "10:00"], ["17:00", "22:30"]] },
+  { day_of_week: 3, slots: [["06:00", "10:00"], ["17:00", "22:30"]] },
+  { day_of_week: 4, slots: [["06:00", "10:00"], ["17:00", "22:30"]] },
+  { day_of_week: 5, slots: [["06:00", "10:00"], ["17:00", "22:30"]] },
+  { day_of_week: 6, slots: [["06:00", "12:00"], ["16:00", "22:30"]] },
+];
 
-  // Step 6: Availability Windows (0-6 every day 06:00 to 22:00)
-  const chargerIds = chargers.map((c) => c.id);
-  await adminClient.from("availability_windows").delete().in("charger_id", chargerIds);
+const WINDOWS_STORE = [
+  { day_of_week: 0, slots: [] },
+  { day_of_week: 1, slots: [["08:00", "20:00"]] },
+  { day_of_week: 2, slots: [["08:00", "20:00"]] },
+  { day_of_week: 3, slots: [["08:00", "20:00"]] },
+  { day_of_week: 4, slots: [["08:00", "20:00"]] },
+  { day_of_week: 5, slots: [["08:00", "20:00"]] },
+  { day_of_week: 6, slots: [["08:00", "20:00"]] },
+];
 
-  const windows = [];
-  for (const c of chargers) {
-    for (let day = 0; day <= 6; day++) {
-      windows.push({
-        charger_id: c.id,
-        day_of_week: day,
-        start_time: "06:00",
-        end_time: "22:00",
-      });
+function expandWindows(chargerId, shape) {
+  const rows = [];
+  for (const day of shape) {
+    for (const [start_time, end_time] of day.slots) {
+      rows.push({ charger_id: chargerId, day_of_week: day.day_of_week, start_time, end_time });
     }
   }
+  return rows;
+}
 
-  const { error: winErr } = await adminClient.from("availability_windows").insert(windows);
-  if (winErr) {
-    console.warn("⚠️ Availability windows insert warning:", winErr.message);
+async function ensureUser(desired) {
+  const { data, error } = await admin.auth.admin.createUser({
+    email: desired.email,
+    password: SEED_PASSWORD,
+    email_confirm: true,
+    user_metadata: { name: desired.name, role: desired.role, phone: desired.phone },
+  });
+  if (error) {
+    if (/already exists|already been registered/i.test(error.message)) return null;
+    throw new Error(`createUser ${desired.email}: ${error.message}`);
+  }
+  return data.user?.id ?? null;
+}
+
+async function findUserId(email) {
+  const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  if (error) throw new Error(`listUsers: ${error.message}`);
+  return data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase()) ?? null;
+}
+
+async function pruneLegacyUsers() {
+  const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  if (error) throw new Error(`listUsers: ${error.message}`);
+
+  const stale = data.users.filter((u) => LEGACY_EMAILS.includes(u.email?.toLowerCase()));
+  if (stale.length === 0) {
+    console.log("- No retired demo accounts to remove.");
+    return;
+  }
+
+  for (const u of stale) {
+    const { error: delErr } = await admin.auth.admin.deleteUser(u.id);
+    if (delErr) console.warn(`  ! Could not delete ${u.email}: ${delErr.message}`);
+    else console.log(`  - Deleted retired demo account ${u.email} (cascaded its chargers and bookings).`);
+  }
+}
+
+async function seed() {
+  console.log("Starting PlugNear minimal demo seed...\n");
+
+  await pruneLegacyUsers();
+
+  let hostId = (await findUserId(HOST.email))?.id;
+  if (!hostId) {
+    hostId = await ensureUser(HOST);
+    hostId = hostId ?? (await findUserId(HOST.email))?.id;
+    console.log(hostId ? `+ Created host ${HOST.email}` : `x Failed to create host ${HOST.email}`);
   } else {
-    console.log(`✅ Upserted ${windows.length} availability windows (7 days/week per charger)`);
+    await admin.auth.admin.updateUserById(hostId, {
+      password: SEED_PASSWORD,
+      email_confirm: true,
+      user_metadata: { name: HOST.name, role: HOST.role, phone: HOST.phone },
+    });
+    console.log(`= Updated host ${HOST.email}`);
   }
 
-  // Step 7: Sample Bookings
-  if (driver1Id && driver2Id) {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateStr = tomorrow.toISOString().slice(0, 10);
-
-    const sampleBookings = [
-      {
-        id: "b1111111-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        charger_id: "a1111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        driver_id: driver1Id,
-        start_at: `${dateStr}T09:00:00+05:30`,
-        end_at: `${dateStr}T11:00:00+05:30`,
-        status: "confirmed",
-        total_cost: 240.0,
-      },
-      {
-        id: "b2222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        charger_id: "a1111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        driver_id: driver2Id,
-        start_at: `${dateStr}T14:00:00+05:30`,
-        end_at: `${dateStr}T15:30:00+05:30`,
-        status: "requested",
-        total_cost: 180.0,
-      },
-    ];
-
-    const bookingIds = sampleBookings.map((b) => b.id);
-    await adminClient.from("bookings").delete().in("id", bookingIds);
-
-    const { error: bErr } = await adminClient.from("bookings").upsert(sampleBookings, { onConflict: "id" });
-    if (bErr) {
-      console.warn("⚠️ Bookings upsert warning:", bErr.message);
-    } else {
-      console.log(`✅ Upserted sample test bookings`);
-    }
+  let driverId = (await findUserId(DRIVER.email))?.id;
+  if (!driverId) {
+    driverId = await ensureUser(DRIVER);
+    driverId = driverId ?? (await findUserId(DRIVER.email))?.id;
+    console.log(driverId ? `+ Created driver ${DRIVER.email}` : `x Failed to create driver ${DRIVER.email}`);
+  } else {
+    await admin.auth.admin.updateUserById(driverId, {
+      password: SEED_PASSWORD,
+      email_confirm: true,
+      user_metadata: { name: DRIVER.name, role: DRIVER.role, phone: DRIVER.phone },
+    });
+    console.log(`= Updated driver ${DRIVER.email}`);
   }
 
-  console.log("\n🎉 Seed complete! All accounts and data are verified and idempotent.");
+  if (!hostId || !driverId) {
+    console.error("Could not resolve both demo accounts; aborting before touching tables.");
+    process.exit(1);
+  }
+
+  const { error: tableProbe } = await admin.from("profiles").select("id").limit(1);
+  if (tableProbe) {
+    console.log(
+      "\nThe public tables are not in this Supabase project yet. Apply the migrations in supabase/migrations/ from the SQL Editor, then re-run npm run seed."
+    );
+    return;
+  }
+
+  for (const u of [HOST, DRIVER]) {
+    const id = u === HOST ? hostId : driverId;
+    const { error } = await admin
+      .from("profiles")
+      .upsert({ id, name: u.name, role: u.role, phone: u.phone }, { onConflict: "id" });
+    if (error) console.warn(`  ! Profile sync warning for ${u.email}: ${error.message}`);
+  }
+  console.log(`= Synced 2 profiles`);
+
+  const chargers = chargersFor(hostId);
+  for (const c of chargers) {
+    const { error } = await admin.from("chargers").upsert(c, { onConflict: "id" });
+    if (error) console.warn(`  ! Charger upsert warning for ${c.title}: ${error.message}`);
+  }
+  console.log(`= Upserted ${chargers.length} chargers`);
+
+  const chargerIds = chargers.map((c) => c.id);
+  await admin.from("bookings").delete().in("charger_id", chargerIds);
+  await admin.from("availability_windows").delete().in("charger_id", chargerIds);
+
+  const windows = [
+    ...expandWindows(CHARGER_HOME_ID, WINDOWS_HOME),
+    ...expandWindows(CHARGER_STORE_ID, WINDOWS_STORE),
+  ];
+  const { error: winErr } = await admin.from("availability_windows").insert(windows);
+  if (winErr) console.warn(`  ! Availability windows insert warning: ${winErr.message}`);
+  else console.log(`+ Inserted ${windows.length} weekly availability windows`);
+
+  // Demo slots, computed in IST so they always land inside a real window.
+  // The home charger has an evening window every day, so the confirmed booking
+  // is safe on any weekday. The pending request targets the store on weekdays
+  // and falls back to the home charger's evening window otherwise.
+  const tomorrowIst = istParts(new Date(Date.now() + 24 * 3600_000));
+  const storeOpenTomorrow = WINDOWS_STORE[tomorrowIst.weekday].slots.length > 0;
+
+  const pendingChargerId = storeOpenTomorrow ? CHARGER_STORE_ID : CHARGER_HOME_ID;
+  const pendingStart = storeOpenTomorrow ? istTomorrow("11:00", "00") : istTomorrow("20:00", "00");
+  const pendingEnd = storeOpenTomorrow ? istTomorrow("12:30", "00") : istTomorrow("21:00", "00");
+  const pendingPrice = storeOpenTomorrow ? 190.0 : 85.0;
+
+  const bookings = [
+    {
+      id: BOOKING_CONFIRMED_ID,
+      charger_id: CHARGER_HOME_ID,
+      driver_id: driverId,
+      start_at: istTomorrow("18:00", "00").toISOString(),
+      end_at: istTomorrow("19:30", "00").toISOString(),
+      status: "confirmed",
+      total_cost: 127.5,
+      decided_at: new Date().toISOString(),
+    },
+    {
+      id: BOOKING_PENDING_ID,
+      charger_id: pendingChargerId,
+      driver_id: driverId,
+      start_at: pendingStart.toISOString(),
+      end_at: pendingEnd.toISOString(),
+      status: "requested",
+      total_cost: Math.round(((pendingEnd - pendingStart) / 3_600_000) * pendingPrice * 100) / 100,
+    },
+  ];
+
+  const { error: bookingErr } = await admin.from("bookings").upsert(bookings, { onConflict: "id" });
+  if (bookingErr) console.warn(`  ! Booking upsert warning: ${bookingErr.message}`);
+  else console.log(`+ Inserted 2 bookings (1 confirmed, 1 awaiting host decision)`);
+
+  console.log("\nSeed complete.");
+  console.log(`  host    ${HOST.email} / ${SEED_PASSWORD}   -> owns ${chargers.length} chargers`);
+  console.log(`  driver  ${DRIVER.email} / ${SEED_PASSWORD} -> 1 confirmed + 1 pending booking`);
+  console.log(`  (demo slots are placed on ${tomorrowIst.date}, the next Asia/Kolkata calendar day)`);
 }
 
 seed().catch((err) => {
-  console.error("Fatal seed error:", err);
+  console.error("Fatal seed error:", err.message || err);
   process.exit(1);
 });
