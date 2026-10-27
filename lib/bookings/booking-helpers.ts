@@ -1,6 +1,7 @@
 import {
   doRangesOverlap,
   calculateBookingCost,
+  ERROR_CODES,
   type BookingRecord,
   type TimeSlot,
   type Result,
@@ -37,6 +38,8 @@ export function mapBookingRuleError(code: string, fallbackMessage?: string): str
       return "This slot is no longer available as another booking was confirmed.";
     case "DUPLICATE_BOOKING":
       return "You already have an active booking or pending request for this charging point during this time slot.";
+    case "DRIVER_SLOT_CONFLICT":
+      return "You already have another confirmed booking at this time. A driver cannot charge at two places at once - cancel one of them first.";
     case "CANNOT_BOOK_ACROSS_MIDNIGHT":
       return "Emergency charging cannot be booked across local midnight. Less than 30 minutes remain in today's charging schedule.";
     case "UNAUTHORIZED":
@@ -102,6 +105,40 @@ export function checkForDuplicateBooking(
   }
 
   return { isDuplicate: false };
+}
+
+/**
+ * A driver physically cannot charge at two places at once, but the database
+ * exclusion constraint is per-charger, so nothing stopped a driver holding two
+ * confirmed bookings on different chargers for the same time.
+ *
+ * `confirmedBookings` should be this driver's confirmed bookings that intersect
+ * the proposed slot, regardless of charger.
+ */
+export function checkDriverCalendarConflict(
+  driverId: string,
+  newSlot: TimeSlot,
+  confirmedBookings: BookingRecord[]
+): Result<{ chargerId: string; bookingId: string }> {
+  const newStart = new Date(newSlot.startAt).getTime();
+  const newEnd = new Date(newSlot.endAt).getTime();
+
+  for (const b of confirmedBookings) {
+    if (b.driverId !== driverId) continue;
+    if (b.status !== "confirmed") continue;
+
+    const bStart = new Date(b.startAt).getTime();
+    const bEnd = new Date(b.endAt).getTime();
+
+    if (newStart < bEnd && newEnd > bStart) {
+      return err<{ chargerId: string; bookingId: string }>(
+        ERROR_CODES.DRIVER_SLOT_CONFLICT,
+        "You already have a confirmed booking at this time on another charger. Cancel it before booking here."
+      );
+    }
+  }
+
+  return ok({ chargerId: "", bookingId: "" });
 }
 
 export interface BuildBookingParams {
