@@ -6,6 +6,14 @@ import type {
 } from "@/lib/validation/charger";
 import type { ConnectorType } from "@/lib/validation/search";
 
+export interface StoredAvailabilityWindow {
+  day_of_week: number;
+  /** "HH:MM" or "HH:MM:SS" as stored by Postgres */
+  start_time: string;
+  /** "HH:MM" or "HH:MM:SS" as stored by Postgres */
+  end_time: string;
+}
+
 export interface HostChargerListItem {
   id: string;
   hostId: string;
@@ -23,6 +31,7 @@ export interface HostChargerListItem {
   createdAt: string;
 
   // Metadata from joins
+  windows: StoredAvailabilityWindow[];
   availabilityWindowsCount: number;
   upcomingConfirmedBookingsCount: number;
 }
@@ -65,6 +74,63 @@ export function buildChargerUpdateRecord(input: UpdateChargerInput) {
     host_connection_type: input.host_connection_type,
     electricity_permission_acknowledged: input.electricity_permission_acknowledged,
   };
+}
+
+/**
+ * Postgres returns a `time` as "06:00:00"; the listing form and our validation
+ * both expect "HH:MM".
+ */
+export function toFormTime(value: string): string {
+  const raw = String(value ?? "");
+  const parts = raw.split(":");
+  if (parts.length < 2) return raw;
+  return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+}
+
+/**
+ * Compact weekly schedule for a host's charger card.
+ * Days sharing the same set of ranges collapse into one line ("Mon-Fri"),
+ * so a normal week reads as two or three lines instead of seven.
+ */
+export interface ScheduleSummaryLine {
+  days: string;
+  ranges: string;
+}
+
+const DAY_SHORT_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function summarizeWeeklySchedule(
+  windows: StoredAvailabilityWindow[]
+): ScheduleSummaryLine[] {
+  if (windows.length === 0) return [];
+
+  const rangesByDay: string[][] = Array.from({ length: 7 }, () => []);
+  for (const w of windows) {
+    if (w.day_of_week < 0 || w.day_of_week > 6) continue;
+    rangesByDay[w.day_of_week].push(`${w.start_time}-${w.end_time}`);
+  }
+
+  // Group consecutive days whose range lists are identical.
+  const groups: Array<{ days: number[]; ranges: string }> = [];
+  for (let day = 0; day < 7; day++) {
+    const ranges = [...rangesByDay[day]].sort().join(", ");
+    if (ranges === "") continue;
+
+    const last = groups[groups.length - 1];
+    if (last && last.ranges === ranges && last.days[last.days.length - 1] === day - 1) {
+      last.days.push(day);
+    } else {
+      groups.push({ days: [day], ranges });
+    }
+  }
+
+  return groups.map((group) => ({
+    days:
+      group.days.length === 1
+        ? DAY_SHORT_LABELS[group.days[0]]
+        : `${DAY_SHORT_LABELS[group.days[0]]}-${DAY_SHORT_LABELS[group.days[group.days.length - 1]]}`,
+    ranges: group.ranges,
+  }));
 }
 
 /**

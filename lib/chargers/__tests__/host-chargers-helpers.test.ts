@@ -23,6 +23,10 @@ describe("Host Chargers Validation & Helpers (Unit Tests)", () => {
     price_per_hour: 150.0,
     notes: "Basement bay with security guard.",
     host_connection_type: "dedicated_ev",
+    windows: [
+      { day_of_week: 1, start_time: "06:00", end_time: "12:00" },
+      { day_of_week: 1, start_time: "16:00", end_time: "22:00" },
+    ],
     electricity_permission_acknowledged: true,
   };
 
