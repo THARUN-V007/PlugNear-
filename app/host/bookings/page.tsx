@@ -17,17 +17,17 @@ export default async function HostBookingsPage() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
       <Navbar profile={profile} email={user.email} pendingBookingsCount={pendingCount} />
 
       <main className="flex-1 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full">
         {!bookingsResult.success ? (
-          <div className="rounded-3xl border border-rose-200 bg-white p-8 shadow-xs text-center max-w-md mx-auto">
-            <AlertTriangle className="h-8 w-8 text-slate-300" strokeWidth={1.5} aria-hidden />
-            <h2 className="mt-3 text-lg font-bold text-slate-900">
+          <div className="rounded-3xl border border-rose-800 bg-[#181B22] p-8 shadow-lg text-center max-w-md mx-auto">
+            <AlertTriangle className="h-8 w-8 text-rose-400 mx-auto" strokeWidth={1.5} aria-hidden />
+            <h2 className="mt-3 text-lg font-black text-white font-display">
               Failed to Load Reservations
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-400">
               {bookingsResult.error.message}
             </p>
           </div>
