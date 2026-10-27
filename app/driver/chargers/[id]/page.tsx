@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlugZap } from "lucide-react";
 import { requireRole } from "@/lib/auth/guard";
 import { Navbar } from "@/components/Navbar";
 import { loadChargerDetails } from "@/lib/bookings/charger-loader";
@@ -39,7 +40,7 @@ export default async function ChargerDetailsPage({
 
         <main className="flex-1 mx-auto max-w-3xl px-4 py-16 sm:px-6 w-full text-center">
           <div className="rounded-3xl bg-white p-8 sm:p-12 border border-slate-200 shadow-sm space-y-4">
-            <div className="text-4xl">🔌</div>
+            <PlugZap className="h-8 w-8 text-slate-300" strokeWidth={1.5} aria-hidden />
             <h1 className="text-xl sm:text-2xl font-black text-slate-900">
               Charging Point Not Found
             </h1>
