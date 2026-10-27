@@ -22,7 +22,7 @@ function createApproxPinIcon() {
   return L.divIcon({
     className: "approx-pin",
     html: `
-      <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #059669; border: 2.5px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.25); color: white; font-weight: bold; font-size: 16px;">
+      <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #39FF14; border: 2.5px solid #0F1115; box-shadow: 0 0 15px rgba(57,255,20,0.4); color: #000; font-weight: bold; font-size: 16px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </div>
     `,
@@ -43,7 +43,7 @@ export default function ApproximateLocationMap({
   const point = unlockedLocation ?? approximateLocation;
 
   return (
-    <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner z-0">
+    <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden border border-[#2C303B] shadow-inner z-0">
       <MapContainer
         center={[point.latitude, point.longitude]}
         zoom={isUnlocked ? 16 : 14}
@@ -60,9 +60,9 @@ export default function ApproximateLocationMap({
           center={[point.latitude, point.longitude]}
           radius={isUnlocked ? 60 : 300}
           pathOptions={{
-            color: isUnlocked ? "#047857" : "#059669",
-            fillColor: isUnlocked ? "#34d399" : "#10b981",
-            fillOpacity: isUnlocked ? 0.22 : 0.15,
+            color: isUnlocked ? "#39FF14" : "#00E5FF",
+            fillColor: isUnlocked ? "#39FF14" : "#00E5FF",
+            fillOpacity: isUnlocked ? 0.25 : 0.18,
             weight: 2,
             dashArray: isUnlocked ? undefined : "6, 6",
           }}
@@ -72,7 +72,7 @@ export default function ApproximateLocationMap({
           <Popup>
             <div className="text-xs space-y-1">
               <p className="font-bold text-slate-900">{chargerTitle}</p>
-              <p className="text-slate-500">
+              <p className="text-slate-600">
                 {isUnlocked
                   ? unlockedAddress ?? "Exact location unlocked by your confirmed booking."
                   : "Approximate area (~300m radius). Exact address shared after confirmation."}
@@ -83,12 +83,12 @@ export default function ApproximateLocationMap({
       </MapContainer>
 
       {/* Floating privacy badge overlay */}
-      <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-[400] rounded-xl bg-white/95 backdrop-blur px-3 py-2 text-xs text-slate-700 shadow-md border border-slate-200 flex items-center gap-2">
+      <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-[400] rounded-xl bg-[#181B22]/90 backdrop-blur-md px-3 py-2 text-xs text-slate-200 shadow-lg border border-[#2C303B] flex items-center gap-2">
         <span aria-hidden>
           {isUnlocked ? (
-            <MapPin className="h-4 w-4 text-emerald-700" strokeWidth={2} />
+            <MapPin className="h-4 w-4 text-primary" strokeWidth={2.5} />
           ) : (
-            <ShieldCheck className="h-4 w-4 text-slate-500" strokeWidth={1.75} />
+            <ShieldCheck className="h-4 w-4 text-cyan-400" strokeWidth={2} />
           )}
         </span>
         <span className="font-medium text-[11px] sm:text-xs">
