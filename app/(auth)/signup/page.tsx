@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Car, CheckCircle2, Loader2, PlugZap, Sparkles, Zap } from "lucide-react";
+import { AlertTriangle, ArrowRight, Car, CheckCircle2, Loader2, PlugZap, Zap } from "lucide-react";
 import { signUpAction, type AuthActionState } from "@/app/actions/auth";
 
 export default function SignUpPage() {
@@ -126,8 +126,9 @@ export default function SignUpPage() {
               name="name"
               type="text"
               required
+              autoComplete="name"
               placeholder="e.g. Ramesh Kumar"
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm"
+              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             />
           </div>
 
@@ -143,8 +144,11 @@ export default function SignUpPage() {
               name="email"
               type="email"
               required
+              autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
               placeholder="user@example.com"
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm"
+              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             />
           </div>
 
@@ -159,8 +163,10 @@ export default function SignUpPage() {
               id="phone"
               name="phone"
               type="tel"
+              autoComplete="tel"
+              inputMode="tel"
               placeholder="+91 98765 43210"
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm"
+              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             />
           </div>
 
@@ -176,17 +182,31 @@ export default function SignUpPage() {
               name="password"
               type="password"
               required
+              // new-password tells password managers to offer a generated password
+              // and stops them autofilling an existing one into a registration form.
+              autoComplete="new-password"
+              minLength={6}
               placeholder="At least 6 characters"
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm"
+              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             />
           </div>
 
           <button
             type="submit"
             disabled={isPending}
-            className="flex w-full justify-center rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-px hover:shadow-emerald-600/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? "Creating account..." : "Complete Sign Up"}
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Creating account...
+              </>
+            ) : (
+              <>
+                Complete Sign Up
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </>
+            )}
           </button>
         </form>
 
