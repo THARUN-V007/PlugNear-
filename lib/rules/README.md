@@ -34,6 +34,7 @@
   - Returns error `SLOT_BLOCKED` if an overlap with any confirmed booking is found.
 - **`findConflictingPendingBookings(confirmedBooking: BookingRecord, allBookingsOnCharger: BookingRecord[]): BookingRecord[]`**
   - Given a newly confirmed booking, identifies all other pending (`requested`) bookings on the same charger that overlap it and must be auto-declined.
+  - *Note:* This auto-decline rule is mirrored at the database level in the SQL function `public.host_approve_booking_atomic` (`supabase/migrations/20261027000003_host_approval_atomicity.sql`). If the auto-decline criteria or interval definition are ever modified, they must be changed in both places to preserve atomicity and consistency.
 
 ### D. Cost Calculation (`lib/rules/cost.ts`)
 - **`calculateBookingCost(durationMinutes: number, pricePerHour: number): Result<BookingCostDetails>`**

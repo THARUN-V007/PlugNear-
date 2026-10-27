@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/guard";
 import { Navbar } from "@/components/Navbar";
+import { loadHostBookings } from "@/lib/bookings/host-bookings-loader";
 
 interface HostPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -10,9 +12,14 @@ export default async function HostHomePage(props: HostPageProps) {
   const searchParams = await props.searchParams;
   const isForbiddenRedirect = searchParams.forbidden === "true";
 
+  const bookingsResult = await loadHostBookings();
+  const pendingCount = bookingsResult.success
+    ? bookingsResult.data.bookings.filter((b) => b.status === "requested").length
+    : 0;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={profile} email={user.email} />
+      <Navbar profile={profile} email={user.email} pendingBookingsCount={pendingCount} />
 
       <main className="flex-1 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full">
         {isForbiddenRedirect && (
@@ -24,6 +31,30 @@ export default async function HostHomePage(props: HostPageProps) {
                 You attempted to access a Driver-only page. As a Charger Host, you have been redirected to your Host Portal.
               </p>
             </div>
+          </div>
+        )}
+
+        {pendingCount > 0 && (
+          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⏳</span>
+              <div>
+                <h2 className="text-sm font-bold text-amber-900">
+                  {pendingCount === 1
+                    ? "1 Pending Booking Request"
+                    : `${pendingCount} Pending Booking Requests`}
+                </h2>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  EV drivers are waiting for your approval. Conflicting slots will be automatically declined.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/host/bookings"
+              className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-amber-700 whitespace-nowrap"
+            >
+              Review Requests →
+            </Link>
           </div>
         )}
 
@@ -52,17 +83,7 @@ export default async function HostHomePage(props: HostPageProps) {
           </div>
 
           <div className="mt-8 space-y-4">
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-6 text-center">
-              <h2 className="text-base font-semibold text-slate-800">
-                Phase 0 Foundation Ready
-              </h2>
-              <p className="mt-1 text-sm text-slate-600 max-w-xl mx-auto">
-                Host authentication and database-level RLS policies are active.
-                The host workflow (charger listing with map picker, availability window manager, and booking approval dashboard) will be implemented by Developer H in subsequent steps.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
               <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-xs">
                 <span className="text-2xl">📍</span>
                 <h3 className="mt-2 text-sm font-bold text-slate-900">1. Charger Listing</h3>
@@ -79,13 +100,31 @@ export default async function HostHomePage(props: HostPageProps) {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-xs">
-                <span className="text-2xl">✅</span>
-                <h3 className="mt-2 text-sm font-bold text-slate-900">3. Request Manager</h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  Review booking requests with instant auto-rejection of conflicting pending slots.
-                </p>
-              </div>
+              <Link
+                href="/host/bookings"
+                className="group rounded-xl border border-purple-200 p-5 bg-purple-50/40 hover:bg-purple-50 transition shadow-xs flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">✅</span>
+                    {pendingCount > 0 ? (
+                      <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-extrabold text-white">
+                        {pendingCount} Pending
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                        View
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="mt-2 text-sm font-bold text-purple-950 group-hover:text-purple-700 transition">
+                    3. Request Manager →
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Review and decide booking requests with atomic double-booking protection.
+                  </p>
+                </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -93,3 +132,4 @@ export default async function HostHomePage(props: HostPageProps) {
     </div>
   );
 }
+

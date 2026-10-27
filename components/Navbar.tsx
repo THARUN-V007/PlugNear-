@@ -5,9 +5,10 @@ import type { UserProfile } from "@/lib/auth/guard";
 interface NavbarProps {
   profile: UserProfile;
   email?: string;
+  pendingBookingsCount?: number;
 }
 
-export function Navbar({ profile, email }: NavbarProps) {
+export function Navbar({ profile, email, pendingBookingsCount }: NavbarProps) {
   const isHost = profile.role === "host";
 
   return (
@@ -42,6 +43,29 @@ export function Navbar({ profile, email }: NavbarProps) {
                 className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 hover:bg-slate-50 transition"
               >
                 My Bookings
+              </Link>
+            </nav>
+          )}
+
+          {/* Navigation Links for Host */}
+          {isHost && (
+            <nav className="flex items-center gap-1 sm:gap-2">
+              <Link
+                href="/host"
+                className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-purple-700 hover:bg-slate-50 transition"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/host/bookings"
+                className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-purple-700 hover:bg-slate-50 transition flex items-center gap-1.5"
+              >
+                <span>Booking Requests</span>
+                {typeof pendingBookingsCount === "number" && pendingBookingsCount > 0 && (
+                  <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-extrabold text-white">
+                    {pendingBookingsCount}
+                  </span>
+                )}
               </Link>
             </nav>
           )}
