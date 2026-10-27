@@ -150,29 +150,44 @@ export default function ChargerCard({ charger, onStatusToggled }: ChargerCardPro
 
       {/* 3. Weekly availability summary (or a warning when none is configured) */}
       {charger.availabilityWindowsCount === 0 ? (
-        <div className="mt-4 rounded-2xl border border-amber-800 bg-amber-950/40 p-3.5 text-xs text-amber-200 flex items-start gap-2.5">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={1.75} aria-hidden />
-          <div className="flex-1">
-            <span className="font-bold block">No availability schedule added yet</span>
-            <span className="text-[11px] text-amber-300/80">
-              This charger will not appear in driver searches until you add weekly windows in
-              Edit Charger.
-            </span>
+        <div className="mt-4 rounded-2xl border border-amber-800 bg-amber-950/40 p-3.5 text-xs text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={1.75} aria-hidden />
+            <div>
+              <span className="font-bold block">No availability schedule added yet</span>
+              <span className="text-[11px] text-amber-300/80">
+                This charger will not appear in driver searches until you set weekly availability hours.
+              </span>
+            </div>
           </div>
+          <Link
+            href={`/host/chargers/${charger.id}/availability`}
+            className="rounded-xl bg-amber-500 px-3.5 py-1.5 text-xs font-black text-black hover:bg-amber-400 transition shrink-0 text-center shadow-sm"
+          >
+            Set Hours &rarr;
+          </Link>
         </div>
       ) : (
-        <div className="mt-4 rounded-2xl border border-[#2C303B] bg-[#0F1115] p-3.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            Weekly availability
-          </span>
-          <ul className="mt-1.5 space-y-1">
-            {summarizeWeeklySchedule(charger.windows).map((line) => (
-              <li key={line.days} className="flex flex-wrap items-baseline gap-x-2 text-[11px]">
-                <span className="font-extrabold text-slate-200 w-16 shrink-0">{line.days}</span>
-                <span className="plugnear-tabular font-semibold text-slate-400">{line.ranges}</span>
-              </li>
-            ))}
-          </ul>
+        <div className="mt-4 rounded-2xl border border-[#2C303B] bg-[#0F1115] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Weekly availability
+            </span>
+            <ul className="mt-1 space-y-1">
+              {summarizeWeeklySchedule(charger.windows).map((line) => (
+                <li key={line.days} className="flex flex-wrap items-baseline gap-x-2 text-[11px]">
+                  <span className="font-extrabold text-slate-200 w-16 shrink-0">{line.days}</span>
+                  <span className="plugnear-tabular font-semibold text-slate-400">{line.ranges}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Link
+            href={`/host/chargers/${charger.id}/availability`}
+            className="rounded-xl border border-[#2C303B] bg-[#242933] px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-[#2e3442] hover:text-white transition shrink-0 self-start sm:self-center"
+          >
+            Edit Hours
+          </Link>
         </div>
       )}
 
@@ -198,6 +213,12 @@ export default function ChargerCard({ charger, onStatusToggled }: ChargerCardPro
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            href={`/host/chargers/${charger.id}/availability`}
+            className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1.5 text-xs font-bold text-cyan-300 transition hover:bg-cyan-500/20"
+          >
+            Availability
+          </Link>
           <Link
             href={`/host/chargers/${charger.id}/edit`}
             className="rounded-xl border border-[#2C303B] bg-[#242933] px-3.5 py-1.5 text-xs font-bold text-slate-200 transition hover:bg-[#2e3442] hover:text-white"

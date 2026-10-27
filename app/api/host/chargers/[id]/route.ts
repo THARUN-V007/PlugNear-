@@ -139,7 +139,8 @@ export async function PUT(request: Request, props: ChargerRouteParams) {
     const windowsResult = await replaceChargerAvailabilityWindows(
       adminClient,
       id,
-      parseResult.data.windows
+      parseResult.data.windows,
+      user.id
     );
 
     if (!windowsResult.success) {

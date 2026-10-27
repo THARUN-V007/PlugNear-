@@ -27,14 +27,32 @@ export function toWindowRows(windows: AvailabilityWindowInput[]) {
 export async function replaceChargerAvailabilityWindows(
   adminClient: SupabaseClient,
   chargerId: string,
-  windows: AvailabilityWindowInput[]
+  windows: AvailabilityWindowInput[],
+  hostId?: string
 ): Promise<Result<number>> {
   const rows = toWindowRows(windows);
 
-  const { data, error } = await adminClient.rpc("replace_charger_availability_windows", {
+  const rpcParams: Record<string, any> = {
     p_charger_id: chargerId,
     p_windows: rows,
-  });
+  };
+  if (hostId) {
+    rpcParams.p_host_id = hostId;
+  }
+
+  let { data, error } = await adminClient.rpc("replace_charger_availability_windows", rpcParams);
+
+  // If error indicates 3-arg vs 2-arg mismatch during migration transition, fallback attempt
+  if (error && hostId && (error.code === "PGRST202" || error.code === "42883")) {
+    const fallback = await adminClient.rpc("replace_charger_availability_windows", {
+      p_charger_id: chargerId,
+      p_windows: rows,
+    });
+    if (!fallback.error) {
+      data = fallback.data;
+      error = null;
+    }
+  }
 
   if (error) {
     const message = error.message ?? "";
@@ -57,7 +75,7 @@ export async function replaceChargerAvailabilityWindows(
     ) {
       return err(
         "MIGRATION_MISSING",
-        "Database migration missing: apply supabase/migrations/20261028000001_replace_availability_windows.sql in your Supabase SQL Editor."
+        "Database migration missing: apply supabase/migrations/20261028000005_replace_availability_windows_with_host_check.sql in your Supabase SQL Editor."
       );
     }
 
