@@ -2,6 +2,7 @@ import {
   checkAvailability,
   checkSlotOverlap,
   calculateBookingCost,
+  calculateHaversineDistance,
   getApproximateCoordinates,
   type TimeSlot,
   type AvailabilityWindow,
@@ -29,6 +30,11 @@ export interface RawCandidateCharger {
 
 export interface AssembleSearchInput {
   candidates: RawCandidateCharger[];
+  /**
+   * The point the driver searched from. Published distance is measured to the
+   * masked pin, never to the charger's real coordinates.
+   */
+  origin: GeoPoint;
   slot: TimeSlot;
   validatedSlot: ValidatedSlotDetails;
   limit: number;
@@ -68,7 +74,7 @@ export interface SearchResponsePayload {
  * 7. Sorts nearest first and truncates to requested limit.
  */
 export function assembleSearchResults(input: AssembleSearchInput): SearchResponsePayload {
-  const { candidates, slot, validatedSlot, limit, connectorFilter } = input;
+  const { candidates, origin, slot, validatedSlot, limit, connectorFilter } = input;
 
   // 1. Filter matching active candidates within radius
   const matchingCandidates = candidates.filter((c) => {
@@ -82,7 +88,7 @@ export function assembleSearchResults(input: AssembleSearchInput): SearchRespons
   });
 
   const totalInRadius = matchingCandidates.length;
-  const availableItems: SearchResultItem[] = [];
+  const ranked: Array<{ item: SearchResultItem; sortMeters: number }> = [];
 
   for (const candidate of matchingCandidates) {
     // 2. Availability window check
@@ -113,29 +119,38 @@ export function assembleSearchResults(input: AssembleSearchInput): SearchRespons
       longitude: candidate.longitude,
     });
 
-    // 6. Distance in km rounded to one decimal
-    const distanceKm = Math.round((candidate.distanceMeters / 1000) * 10) / 10;
+    // 6. Distance in km rounded to one decimal, measured from the MASKED pin.
+    // The SQL distance from the true coordinates is deliberately not published:
+    // a masked pin next to a true distance would let two searches from two
+    // different origins triangulate the charger's exact position.
+    const maskedDistanceMeters = calculateHaversineDistance(origin, approximateLocation);
+    const distanceKm = Math.round((maskedDistanceMeters / 1000) * 10) / 10;
 
     // 7. Assemble safe result item (never contains exact coordinates or address_text)
-    availableItems.push({
-      id: candidate.id,
-      title: candidate.title,
-      connectorType: candidate.connectorType,
-      powerKw: candidate.powerKw,
-      pricePerHour: candidate.pricePerHour,
-      distanceKm,
-      estimatedCost,
-      approximateLocation,
+    ranked.push({
+      item: {
+        id: candidate.id,
+        title: candidate.title,
+        connectorType: candidate.connectorType,
+        powerKw: candidate.powerKw,
+        pricePerHour: candidate.pricePerHour,
+        distanceKm,
+        estimatedCost,
+        approximateLocation,
+      },
+      sortMeters: maskedDistanceMeters,
     });
   }
 
-  const availableCount = availableItems.length;
+  const availableCount = ranked.length;
 
-  // 8. Sort nearest first (using distanceKm and tie-breaking by exact distance)
-  availableItems.sort((a, b) => a.distanceKm - b.distanceKm);
+  // 8. Sort nearest first by the masked distance; id keeps ties deterministic
+  ranked.sort(
+    (a, b) => a.sortMeters - b.sortMeters || a.item.id.localeCompare(b.item.id)
+  );
 
   // 9. Apply limit
-  const limitedItems = availableItems.slice(0, Math.max(1, limit));
+  const limitedItems = ranked.slice(0, Math.max(1, limit)).map((entry) => entry.item);
 
   return {
     chargers: limitedItems,
