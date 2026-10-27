@@ -30,58 +30,86 @@ BEGIN
   -- Host 1
   INSERT INTO auth.users (
     id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
   ) VALUES (
     v_host1_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'host1@plugnear.local', v_encrypted_password, now(),
+    'host1@plugnear.dev', v_encrypted_password, now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"name":"Arun Host","role":"host","phone":"+91 98450 11111"}'::jsonb,
-    now(), now()
-  ) ON CONFLICT (id) DO UPDATE SET encrypted_password = v_encrypted_password;
+    now(), now(), '', '', '', '', false
+  ) ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    encrypted_password = v_encrypted_password,
+    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
 
   -- Host 2
   INSERT INTO auth.users (
     id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
   ) VALUES (
     v_host2_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'host2@plugnear.local', v_encrypted_password, now(),
+    'host2@plugnear.dev', v_encrypted_password, now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"name":"Priya Host","role":"host","phone":"+91 98450 22222"}'::jsonb,
-    now(), now()
-  ) ON CONFLICT (id) DO UPDATE SET encrypted_password = v_encrypted_password;
+    now(), now(), '', '', '', '', false
+  ) ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    encrypted_password = v_encrypted_password,
+    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
 
   -- Driver 1
   INSERT INTO auth.users (
     id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
   ) VALUES (
     v_driver1_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'driver1@plugnear.local', v_encrypted_password, now(),
+    'driver1@plugnear.dev', v_encrypted_password, now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"name":"Rahul Driver","role":"driver","phone":"+91 98450 33333"}'::jsonb,
-    now(), now()
-  ) ON CONFLICT (id) DO UPDATE SET encrypted_password = v_encrypted_password;
+    '{"name":"Vikram Driver","role":"driver","phone":"+91 98450 33333"}'::jsonb,
+    now(), now(), '', '', '', '', false
+  ) ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    encrypted_password = v_encrypted_password,
+    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
 
   -- Driver 2
   INSERT INTO auth.users (
     id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user
   ) VALUES (
     v_driver2_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-    'driver2@plugnear.local', v_encrypted_password, now(),
+    'driver2@plugnear.dev', v_encrypted_password, now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"name":"Sneha Driver","role":"driver","phone":"+91 98450 44444"}'::jsonb,
-    now(), now()
-  ) ON CONFLICT (id) DO UPDATE SET encrypted_password = v_encrypted_password;
+    '{"name":"Ananya Driver","role":"driver","phone":"+91 98450 44444"}'::jsonb,
+    now(), now(), '', '', '', '', false
+  ) ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    encrypted_password = v_encrypted_password,
+    raw_user_meta_data = EXCLUDED.raw_user_meta_data;
 
-  -- 2. Upsert Profiles
+  -- 2. Insert or update corresponding identities in auth.identities
+  INSERT INTO auth.identities (
+    id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+  ) VALUES
+    (v_host1_id, v_host1_id, jsonb_build_object('sub', v_host1_id::text, 'email', 'host1@plugnear.dev'), 'email', 'host1@plugnear.dev', now(), now(), now()),
+    (v_host2_id, v_host2_id, jsonb_build_object('sub', v_host2_id::text, 'email', 'host2@plugnear.dev'), 'email', 'host2@plugnear.dev', now(), now(), now()),
+    (v_driver1_id, v_driver1_id, jsonb_build_object('sub', v_driver1_id::text, 'email', 'driver1@plugnear.dev'), 'email', 'driver1@plugnear.dev', now(), now(), now()),
+    (v_driver2_id, v_driver2_id, jsonb_build_object('sub', v_driver2_id::text, 'email', 'driver2@plugnear.dev'), 'email', 'driver2@plugnear.dev', now(), now(), now())
+  ON CONFLICT (provider, provider_id) DO UPDATE SET
+    identity_data = EXCLUDED.identity_data,
+    updated_at = now();
+
+  -- 3. Upsert Profiles
   INSERT INTO public.profiles (id, name, role, phone)
   VALUES
     (v_host1_id, 'Arun Host', 'host', '+91 98450 11111'),
     (v_host2_id, 'Priya Host', 'host', '+91 98450 22222'),
-    (v_driver1_id, 'Rahul Driver', 'driver', '+91 98450 33333'),
-    (v_driver2_id, 'Sneha Driver', 'driver', '+91 98450 44444')
+    (v_driver1_id, 'Vikram Driver', 'driver', '+91 98450 33333'),
+    (v_driver2_id, 'Ananya Driver', 'driver', '+91 98450 44444')
   ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     phone = EXCLUDED.phone;

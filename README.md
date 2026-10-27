@@ -49,6 +49,19 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 ---
 
+## Seed Test Accounts (Single Source of Truth)
+
+All seeded test accounts share the development password: **`Password123!`**
+
+| Role | Name | Email | Password | Phone | Redirect on Login |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Driver** | Vikram Driver | `driver1@plugnear.dev` | `Password123!` | +91 98450 33333 | `/driver` |
+| **Driver** | Ananya Driver | `driver2@plugnear.dev` | `Password123!` | +91 98450 44444 | `/driver` |
+| **Host** | Arun Host | `host1@plugnear.dev` | `Password123!` | +91 98450 11111 | `/host` |
+| **Host** | Priya Host | `host2@plugnear.dev` | `Password123!` | +91 98450 22222 | `/host` |
+
+---
+
 ## Database Migrations & Seed Data
 
 1. **Enable Supabase Extensions** in the Supabase Dashboard under **Database -> Extensions**:
@@ -61,7 +74,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    - **Migration 2:** Run `supabase/migrations/20261027000001_restrict_charger_privacy.sql` (Restricts base table RLS, creates `public_chargers` safe view, and introduces server-only PostGIS search function `search_chargers_nearby`).
 
 3. **Populate Seed Data:**
-   - Run `supabase/seed.sql` to populate test accounts, chargers, schedules, and test bookings in Indiranagar (Bengaluru).
+   - **Automated Script (Recommended):** Run `npm run seed` locally to idempotently create/update test accounts, chargers, schedules, and test bookings using the Supabase Admin API.
+   - **SQL Editor Alternative:** Run `supabase/seed.sql` directly in the Supabase SQL Editor.
 
 4. **Run Database Verification Tests:**
    - Run `supabase/tests/verify_exclusion_constraint.sql` (Verifies back-to-back bookings succeed and overlaps fail with `exclusion_violation`).
@@ -75,10 +89,13 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # 1. Install dependencies
 npm install
 
-# 2. Run unit tests
+# 2. Populate / refresh seed data (idempotent)
+npm run seed
+
+# 3. Run unit tests
 npm test
 
-# 3. Start local development server
+# 4. Start local development server
 npm run dev
 ```
 
@@ -97,7 +114,7 @@ Run `supabase/tests/verify_privacy_lockdown.sql` in the Supabase SQL Editor, or 
 
 ### 2. Manual Search API Test (`GET /api/chargers/search`)
 
-Log in as `driver1@plugnear.local` in your browser, then call the search endpoint with query parameters:
+Log in as `driver1@plugnear.dev` in your browser, then call the search endpoint with query parameters:
 
 ```text
 http://localhost:3000/api/chargers/search?lat=12.9719&lng=77.6412&radius=10&start=<TOMORROW_DATE>T10:00:00Z&end=<TOMORROW_DATE>T11:00:00Z
@@ -114,7 +131,7 @@ http://localhost:3000/api/chargers/search?lat=12.9719&lng=77.6412&radius=10&star
 
 #### Auth & Input Validation Failure Cases:
 - **Logged Out / No Session:** Returns `401 Unauthorized` (`UNAUTHORIZED`).
-- **Host User:** Log in as `host1@plugnear.local` and call the endpoint &rarr; Returns `403 Forbidden` (`FORBIDDEN_ROLE`).
+- **Host User:** Log in as `host1@plugnear.dev` and call the endpoint &rarr; Returns `403 Forbidden` (`FORBIDDEN_ROLE`).
 - **Past Start Time:** Pass past timestamp for `start` &rarr; Returns `400 Bad Request` (`PAST_SLOT`).
 - **End Before Start:** Pass `end < start` &rarr; Returns `400 Bad Request` (`INVALID_END_TIME`).
 - **Invalid Duration:** Pass duration of 15 minutes or 9 hours &rarr; Returns `400 Bad Request` (`DURATION_TOO_SHORT` / `DURATION_TOO_LONG`).
