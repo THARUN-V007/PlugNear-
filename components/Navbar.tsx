@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { logOutAction } from "@/app/actions/auth";
 import type { UserProfile } from "@/lib/auth/guard";
 
@@ -10,20 +11,40 @@ export function Navbar({ profile, email }: NavbarProps) {
   const isHost = profile.role === "host";
 
   return (
-    <header className="border-b border-slate-200 bg-white shadow-sm">
+    <header className="border-b border-slate-200 bg-white shadow-xs">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-lg shadow-sm">
-            ⚡
-          </div>
-          <div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              PlugNear
-            </span>
-            <span className="ml-2 text-xs font-medium text-slate-500 uppercase tracking-wider">
-              {isHost ? "Host Portal" : "Driver Portal"}
-            </span>
-          </div>
+        <div className="flex items-center gap-6">
+          <Link href={isHost ? "/host" : "/driver"} className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-lg shadow-sm">
+              ⚡
+            </div>
+            <div>
+              <span className="text-xl font-bold tracking-tight text-slate-900">
+                PlugNear
+              </span>
+              <span className="ml-2 text-xs font-medium text-slate-500 uppercase tracking-wider hidden sm:inline">
+                {isHost ? "Host Portal" : "Driver Portal"}
+              </span>
+            </div>
+          </Link>
+
+          {/* Navigation Links for Driver */}
+          {!isHost && (
+            <nav className="flex items-center gap-1 sm:gap-2">
+              <Link
+                href="/driver"
+                className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 hover:bg-slate-50 transition"
+              >
+                Search
+              </Link>
+              <Link
+                href="/driver/bookings"
+                className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 hover:bg-slate-50 transition"
+              >
+                My Bookings
+              </Link>
+            </nav>
+          )}
         </div>
 
         <div className="flex items-center gap-4">

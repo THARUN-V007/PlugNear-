@@ -216,10 +216,7 @@ export default function ChargerDetailsView({
                 href="/driver/bookings"
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
               >
-                <span>View My Bookings</span>
-                <span className="rounded bg-emerald-800/60 px-1.5 py-0.2 text-[10px] uppercase tracking-wide text-emerald-100">
-                  Step 6: Coming next
-                </span>
+                <span>View My Bookings &rarr;</span>
               </Link>
             </div>
           </div>
