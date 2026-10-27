@@ -134,13 +134,13 @@ export function canCancelBooking(
   booking: Pick<BookingRecord, "status" | "startAt">,
   now: Date | string = new Date()
 ): boolean {
-  if (booking.status === "requested") {
-    return true;
-  }
+  const nowDate = typeof now === "string" ? new Date(now) : now;
+  const startDate = typeof booking.startAt === "string" ? new Date(booking.startAt) : booking.startAt;
 
-  if (booking.status === "confirmed") {
-    const nowDate = typeof now === "string" ? new Date(now) : now;
-    const startDate = typeof booking.startAt === "string" ? new Date(booking.startAt) : booking.startAt;
+  // Both cancellable statuses stop being cancellable once the slot starts:
+  // a request that was never decided has expired by then, and a confirmed
+  // booking has begun (rule 8.6).
+  if (booking.status === "requested" || booking.status === "confirmed") {
     return nowDate.getTime() < startDate.getTime();
   }
 
