@@ -21,9 +21,9 @@ import SearchStateBanner from "@/components/search/SearchStateBanner";
 const ChargerMap = dynamic(() => import("@/components/map/ChargerMap"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full min-h-[380px] lg:min-h-[520px] items-center justify-center rounded-2xl bg-slate-100 border border-slate-200">
-      <div className="flex flex-col items-center gap-2 text-slate-400 text-xs">
-        <span className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></span>
+    <div className="flex h-full w-full min-h-[380px] lg:min-h-[520px] items-center justify-center rounded-2xl bg-[#0F1115] border border-[#2C303B]">
+      <div className="flex flex-col items-center gap-2 text-slate-500 text-xs">
+        <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
         <span>Loading map...</span>
       </div>
     </div>
@@ -106,180 +106,176 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
     [location, radiusKm, date, startTime, durationMinutes, connectorType]
   );
 
-  const filtersAreStale =
-    !isEmergencyMode &&
-    searchedSignature.current !== null &&
-    searchedSignature.current !== filterSignature;
+  const filtersAreStale = Boolean(
+    hasSearched &&
+      !isEmergencyMode &&
+      searchedSignature.current &&
+      searchedSignature.current !== filterSignature
+  );
 
-  // 1. Standard Scheduled Search
+  // 1. Core Scheduled Search Execution
   const executeSearch = useCallback(async () => {
     setValidationError(null);
     setSearchError(null);
-    setIsEmergencyMode(false);
     setGeoFallbackPrompt(false);
-    setGeoErrorMessage(null);
-    setFitBoundsPoints(undefined);
+    setIsEmergencyMode(false);
+    setEmergencySlot(null);
 
-    let utcSlot: { startAt: string; endAt: string };
+    // Validate slot in Asia/Kolkata
+    let slot: { startAt: string; endAt: string };
     try {
-      utcSlot = kolkataInputsToUtcSlot({
-        date,
-        startTime,
-        durationMinutes,
-      });
-    } catch (e: any) {
-      setValidationError(e.message || "Invalid date or time components.");
+      slot = kolkataInputsToUtcSlot({ date, startTime, durationMinutes });
+    } catch {
+      setValidationError("Please enter a valid date and start time.");
       return;
     }
 
-    const preValidation = validateSlot(utcSlot, new Date());
-    if (!preValidation.success) {
-      setValidationError(preValidation.error.message);
+    const slotVal = validateSlot(
+      { startAt: slot.startAt, endAt: slot.endAt },
+      new Date()
+    );
+    if (!slotVal.success) {
+      setValidationError(slotVal.error.message);
       return;
     }
 
-    const currentRequestId = ++activeRequestId.current;
-    searchedSignature.current = filterSignature;
     setIsLoading(true);
+    const thisRequestId = ++activeRequestId.current;
 
     try {
-      const queryParams = new URLSearchParams({
+      const params = new URLSearchParams({
         lat: location.latitude.toString(),
         lng: location.longitude.toString(),
-        radius: radiusKm.toString(),
-        start: utcSlot.startAt,
-        end: utcSlot.endAt,
+        radiusKm: radiusKm.toString(),
+        startAt: slot.startAt,
+        endAt: slot.endAt,
       });
 
       if (connectorType) {
-        queryParams.set("connector", connectorType);
+        params.set("connectorType", connectorType);
       }
 
-      const res = await fetch(`/api/chargers/search?${queryParams.toString()}`);
-      const json = await res.json();
+      const res = await fetch(`/api/chargers/search?${params.toString()}`);
+      const data = await res.json();
 
-      if (currentRequestId !== activeRequestId.current) {
-        return;
-      }
+      // Discard stale out-of-order response
+      if (thisRequestId !== activeRequestId.current) return;
 
-      setIsLoading(false);
-      setHasSearched(true);
-
-      if (!res.ok || !json.success) {
-        const errorMsg = json.error?.message || "Search failed. Please try again.";
+      if (!res.ok || !data.success) {
         setSearchError({
-          title: "Search Error",
-          hint: errorMsg,
+          title: "Search failed",
+          hint: data?.error?.message || "Could not retrieve available chargers. Please try again.",
         });
         setChargers([]);
         setMeta(null);
         return;
       }
 
-      setChargers(json.data.chargers || []);
-      setMeta(json.data.meta || { totalInRadius: 0, availableCount: 0 });
+      setChargers(data.data.chargers);
+      setMeta(data.data.meta);
+      setHasSearched(true);
+      searchedSignature.current = filterSignature;
 
-      if (json.data.chargers && json.data.chargers.length > 0) {
-        setSelectedChargerId(json.data.chargers[0].id);
+      // Select first charger if available
+      if (data.data.chargers.length > 0) {
+        setSelectedChargerId(data.data.chargers[0].id);
       } else {
         setSelectedChargerId(null);
       }
     } catch {
-      if (currentRequestId !== activeRequestId.current) {
-        return;
-      }
-      setIsLoading(false);
+      if (thisRequestId !== activeRequestId.current) return;
       setSearchError({
-        title: "Network Connection Error",
-        hint: "Could not reach the search service. Please check your network and try again.",
+        title: "Connection error",
+        hint: "Could not connect to the search service. Please check your internet connection.",
       });
+      setChargers([]);
+      setMeta(null);
+    } finally {
+      if (thisRequestId === activeRequestId.current) {
+        setIsLoading(false);
+      }
     }
-  }, [location, radiusKm, date, startTime, durationMinutes, connectorType, filterSignature]);
+  }, [date, startTime, durationMinutes, location, radiusKm, connectorType, filterSignature]);
 
-  // 2. Emergency Mode Execution (Calls GET /api/chargers/emergency)
+  // 2. Emergency Mode Search Execution
   const executeEmergencySearch = useCallback(
-    async (targetLocation: GeoPoint) => {
+    async (coords: GeoPoint) => {
+      setIsEmergencyLoading(true);
       setSearchError(null);
       setValidationError(null);
       setGeoFallbackPrompt(false);
-      setGeoErrorMessage(null);
 
-      const currentRequestId = ++activeRequestId.current;
-      searchedSignature.current = null;
-      setIsEmergencyLoading(true);
-      setIsLoading(true);
+      const thisRequestId = ++activeRequestId.current;
 
       try {
-        const queryParams = new URLSearchParams({
-          lat: targetLocation.latitude.toString(),
-          lng: targetLocation.longitude.toString(),
-          radius: "25", // Default emergency radius
+        const params = new URLSearchParams({
+          lat: coords.latitude.toString(),
+          lng: coords.longitude.toString(),
         });
 
-        const res = await fetch(`/api/chargers/emergency?${queryParams.toString()}`);
-        const json = await res.json();
-
-        if (currentRequestId !== activeRequestId.current) {
-          return;
+        if (connectorType) {
+          params.set("connectorType", connectorType);
         }
 
-        setIsEmergencyLoading(false);
-        setIsLoading(false);
-        setHasSearched(true);
-        setIsEmergencyMode(true);
+        const res = await fetch(`/api/chargers/emergency?${params.toString()}`);
+        const data = await res.json();
 
-        if (!res.ok || !json.success) {
-          const errorMsg = json.error?.message || "Emergency search failed. Please try again.";
+        if (thisRequestId !== activeRequestId.current) return;
+
+        if (!res.ok || !data.success) {
           setSearchError({
-            title: "Emergency Search Error",
-            hint: errorMsg,
+            title: "Emergency search failed",
+            hint: data?.error?.message || "Could not complete emergency search. Please try regular search.",
           });
-          setChargers([]);
-          setMeta(null);
-          setEmergencySlot(null);
           return;
         }
 
-        const candidateChargers: SearchResultItem[] = json.data.chargers || [];
-        setChargers(candidateChargers);
-        setMeta(json.data.meta || { totalInRadius: 0, availableCount: 0 });
-        setEmergencySlot(json.data.slot || null);
+        setIsEmergencyMode(true);
+        setEmergencySlot(data.data.slot);
+        setChargers(data.data.chargers);
+        setMeta(data.data.meta);
+        setHasSearched(true);
+        searchedSignature.current = null; // Stale check does not apply to emergency mode
 
-        if (candidateChargers.length > 0) {
-          const nearest = candidateChargers[0];
+        // If nearest charger found, select it and fit bounds
+        if (data.data.nearestCharger) {
+          const nearest = data.data.nearestCharger;
           setSelectedChargerId(nearest.id);
-          // Automatically fit map bounds to the driver location and the nearest charger
           setFitBoundsPoints([
-            targetLocation,
-            nearest.approximateLocation,
+            coords,
+            {
+              latitude: nearest.approximateLocation.latitude,
+              longitude: nearest.approximateLocation.longitude,
+            },
           ]);
         } else {
           setSelectedChargerId(null);
           setFitBoundsPoints(undefined);
         }
       } catch {
-        if (currentRequestId !== activeRequestId.current) {
-          return;
-        }
-        setIsEmergencyLoading(false);
-        setIsLoading(false);
+        if (thisRequestId !== activeRequestId.current) return;
         setSearchError({
-          title: "Network Connection Error",
-          hint: "Could not reach the emergency charging service. Please check your network connection and retry.",
+          title: "Connection error",
+          hint: "Could not reach the server for emergency search. Please check your internet connection.",
         });
+      } finally {
+        if (thisRequestId === activeRequestId.current) {
+          setIsEmergencyLoading(false);
+        }
       }
     },
-    []
+    [connectorType]
   );
 
-  // 3. Geolocation Trigger for Emergency Button
+  // 3. Emergency Mode Handler
   const handleEmergencyClick = useCallback(() => {
     setGeoErrorMessage(null);
-    setGeoFallbackPrompt(false);
 
-    if (typeof window === "undefined" || !navigator.geolocation) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
       setGeoFallbackPrompt(true);
-      setGeoErrorMessage("Geolocation is not supported by your browser. Please tap your location on the map below.");
+      setGeoErrorMessage(
+        "Geolocation is not supported by your browser. Tap anywhere on the map to set your location."
+      );
       return;
     }
 
@@ -292,7 +288,7 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
           longitude: Number(pos.coords.longitude.toFixed(6)),
         };
         setLocation(coords);
-        executeEmergencySearch(coords);
+        void executeEmergencySearch(coords);
       },
       (err) => {
         setIsEmergencyLoading(false);
@@ -315,14 +311,10 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
     );
   }, [executeEmergencySearch]);
 
-  // Run exactly one search on mount. After that, filter edits wait for an
-  // explicit Search press: re-firing on every keystroke or map tap hammered the
-  // API and made the Search button meaningless.
   useEffect(() => {
     if (startedInitialSearch.current) return;
     startedInitialSearch.current = true;
     void executeSearch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const emptyMsg = meta ? getEmptyStateMessage(meta, isEmergencyMode ? 25 : radiusKm, isEmergencyMode) : null;
@@ -330,17 +322,17 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
   return (
     <div className="space-y-6">
       {/* 1. Prominent Emergency Mode Hero Banner */}
-      <div className="rounded-3xl border-2 border-amber-400 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white p-5 sm:p-6 shadow-sm">
+      <div className="rounded-3xl border border-amber-500/50 bg-gradient-to-br from-amber-500/10 via-[#181B22] to-[#181B22] p-5 sm:p-6 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-amber-900 border border-amber-400/40">
-              <span className="h-2 w-2 rounded-full bg-amber-600 animate-ping"></span>
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-amber-300 border border-amber-400/40">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
               Low Battery Assistance
             </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white font-display">
               Need a charge right now?
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-xl">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
               1-click emergency search finds the nearest idle charging point within 25 km that is verified free right now.
             </p>
           </div>
@@ -351,20 +343,20 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
               id="emergency-charge-btn"
               disabled={isEmergencyLoading || isLoading}
               onClick={handleEmergencyClick}
-              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-black text-white shadow-md transition ${
+              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-black text-black shadow-lg transition ${
                 isEmergencyLoading
-                  ? "bg-amber-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-amber-600 via-amber-500 to-emerald-600 hover:from-amber-700 hover:to-emerald-700 active:scale-[0.98] shadow-amber-500/25 cursor-pointer"
+                  ? "bg-amber-400 cursor-not-allowed opacity-70"
+                  : "bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:scale-[0.98] shadow-amber-500/25 cursor-pointer"
               }`}
             >
               {isEmergencyLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  <Loader2 className="h-4 w-4 animate-spin text-black" aria-hidden />
                   <span>Finding nearest charger...</span>
                 </>
               ) : (
                 <>
-                  <Zap className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+                  <Zap className="h-4 w-4 fill-black" strokeWidth={2.5} aria-hidden />
                   <span>I need a charge now</span>
                 </>
               )}
@@ -374,7 +366,7 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
               <button
                 type="button"
                 onClick={executeSearch}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                className="rounded-2xl border border-[#2C303B] bg-[#242933] px-4 py-3 text-xs font-bold text-slate-200 hover:bg-[#2e3442] hover:text-white transition"
               >
                 Reset to Standard Search
               </button>
@@ -384,10 +376,10 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
 
         {/* Geolocation Fallback Prompt */}
         {geoFallbackPrompt && (
-          <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50/80 p-4 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="mt-4 rounded-2xl border border-amber-800 bg-amber-950/40 p-4 text-xs text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
             <div className="space-y-0.5">
-              <p className="font-bold inline-flex items-start gap-1.5"><MapPin className="mt-px h-4 w-4 shrink-0" aria-hidden /> {geoErrorMessage}</p>
-              <p className="text-amber-800">
+              <p className="font-bold inline-flex items-start gap-1.5"><MapPin className="mt-px h-4 w-4 shrink-0 text-amber-400" aria-hidden /> {geoErrorMessage}</p>
+              <p className="text-amber-300/80">
                 You can tap anywhere on the map to pin your location, then search from that exact point.
               </p>
             </div>
@@ -396,7 +388,7 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
               id="emergency-fallback-search-btn"
               disabled={isEmergencyLoading}
               onClick={() => executeEmergencySearch(location)}
-              className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition shadow-xs cursor-pointer"
+              className="shrink-0 rounded-xl bg-amber-500 px-4 py-2 text-xs font-black text-black hover:bg-amber-400 transition shadow-md cursor-pointer"
             >
               Find nearest from this point &rarr;
             </button>
@@ -405,15 +397,15 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
 
         {/* Emergency Mode Status Info Bar */}
         {isEmergencyMode && emergencySlot && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs text-emerald-900">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-primary/10 border border-primary/30 px-3.5 py-2 text-xs text-primary">
             <div className="flex items-center gap-2">
               <span className="font-bold inline-flex items-center gap-1.5"><Zap className="h-4 w-4" strokeWidth={2.25} aria-hidden /> Emergency slot active:</span>
-              <span>
+              <span className="text-slate-200">
                 {toKolkataLocalDetails(emergencySlot.startAt).timeString} –{" "}
                 {toKolkataLocalDetails(emergencySlot.endAt).timeString} IST ({emergencySlot.durationMinutes} mins)
               </span>
             </div>
-            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+            <span className="text-[11px] font-bold text-primary bg-primary/20 px-2 py-0.5 rounded-md border border-primary/30">
               Server Time Verified
             </span>
           </div>
@@ -421,12 +413,12 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
       </div>
 
       {/* 2. Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#2C303B] pb-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-black tracking-tight text-white font-display">
             {isEmergencyMode ? "Emergency Search Results" : "Find Idle EV Chargers"}
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400 mt-0.5">
             {isEmergencyMode
               ? "Showing nearest bookable chargers right now. Approximate pins protect host privacy."
               : "Select a location and time slot. Approximate pins protect residential host privacy."}
@@ -434,10 +426,10 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
         </div>
 
         {hasSearched && meta && (
-          <div className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-1.5 text-xs text-slate-700 font-semibold border border-slate-200">
-            <span className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden /> {meta.availableCount} available</span>
-            <span>&bull;</span>
-            <span className="text-slate-500">{meta.totalInRadius} nearby</span>
+          <div className="inline-flex items-center gap-2 rounded-xl bg-[#181B22] px-3 py-1.5 text-xs text-slate-200 font-semibold border border-[#2C303B]">
+            <span className="inline-flex items-center gap-1.5 text-primary"><Zap className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden /> {meta.availableCount} available</span>
+            <span className="text-slate-600">&bull;</span>
+            <span className="text-slate-400">{meta.totalInRadius} nearby</span>
           </div>
         )}
       </div>
@@ -446,7 +438,7 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Search Controls & Results List */}
         <div className="lg:col-span-5 space-y-5">
-          {/* Scheduled Search Form (accessible when not in emergency mode or collapsible) */}
+          {/* Scheduled Search Form */}
           <SearchForm
             location={location}
             onLocationChange={(pt) => {
@@ -473,7 +465,7 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
           {/* Results List or State Banners */}
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+              <h2 className="text-xs font-black uppercase tracking-wider text-slate-400">
                 {isLoading
                   ? isEmergencyLoading
                     ? "Locating nearest charger..."
@@ -483,7 +475,7 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
                   : "Available Chargers"}
               </h2>
               {chargers.length > 0 && (
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500">
                   Sorted nearest first
                 </span>
               )}
@@ -524,12 +516,11 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
                   return (
                     <div
                       key={charger.id}
-                      className="space-y-3 plugnear-rise"
-                      style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
+                      className="space-y-3"
                     >
                       {index === 1 && isEmergencyMode && (
-                        <div className="pt-2 border-t border-slate-200">
-                          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        <div className="pt-2 border-t border-[#2C303B]">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                             Other Available Options
                           </p>
                         </div>
@@ -571,8 +562,7 @@ export default function DriverSearchScreen({ initialNowIso }: DriverSearchScreen
 }
 
 /**
- * Placeholder cards shown while a search is in flight, so the results column
- * keeps its shape instead of collapsing and re-expanding.
+ * Placeholder cards shown while a search is in flight
  */
 function ResultsSkeleton({ count }: { count: number }) {
   return (
@@ -580,22 +570,21 @@ function ResultsSkeleton({ count }: { count: number }) {
       {Array.from({ length: count }).map((_, index) => (
         <div
           key={index}
-          className="plugnear-shimmer rounded-2xl border border-slate-200 bg-white p-4"
-          style={{ animationDelay: `${index * 120}ms` }}
+          className="rounded-2xl border border-[#2C303B] bg-[#181B22] p-4 animate-pulse"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 space-y-2">
-              <div className="h-3.5 w-2/3 rounded-full bg-slate-200" />
-              <div className="h-2.5 w-1/3 rounded-full bg-slate-100" />
+              <div className="h-3.5 w-2/3 rounded-full bg-[#242933]" />
+              <div className="h-2.5 w-1/3 rounded-full bg-[#242933]" />
             </div>
-            <div className="h-8 w-16 rounded-xl bg-slate-100" />
+            <div className="h-8 w-16 rounded-xl bg-[#242933]" />
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="h-8 rounded-lg bg-slate-100" />
-            <div className="h-8 rounded-lg bg-slate-100" />
-            <div className="h-8 rounded-lg bg-slate-100" />
+            <div className="h-8 rounded-lg bg-[#242933]" />
+            <div className="h-8 rounded-lg bg-[#242933]" />
+            <div className="h-8 rounded-lg bg-[#242933]" />
           </div>
-          <div className="mt-4 h-10 rounded-xl bg-slate-100" />
+          <div className="mt-4 h-10 rounded-xl bg-[#242933]" />
         </div>
       ))}
     </div>
