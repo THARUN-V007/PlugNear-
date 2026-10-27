@@ -59,6 +59,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_secret_service_role_key
    | `20261027000005_fix_profile_bootstrap.sql` | Pinned-search_path `handle_new_user()`, repaired details RPC, profile backfill | **Sign-up (without it every sign-up returns HTTP 500)** |
    | `20261028000001_replace_availability_windows.sql` | `replace_charger_availability_windows()` | Weekly availability editor |
    | `20261028000002_restrict_profile_visibility.sql` | Profiles visible only to counterparties | Privacy |
+   | `20261028000003_booking_edge_integrity.sql` | Cross-charger conflict guard, wider auto-decline, duplicate index | Booking integrity |
+   | `20261028000004_driver_slot_exclusion.sql` | One confirmed slot per driver, enforced by the database | Booking integrity under concurrency |
 
 3. **Populate seed data** — either path lands on the same rows:
    - **Recommended:** `npm run seed` (uses the Supabase Admin API, idempotent, and retires older bulkier demo accounts).
