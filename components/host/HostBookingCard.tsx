@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AlertTriangle, Check, PlugZap, User, X, Zap } from "lucide-react";
 import {
   type HostBookingItem,
@@ -113,9 +114,14 @@ export default function HostBookingCard({
               ₹{booking.pricePerHour}/hr
             </span>
           </div>
-          <h3 className="text-lg font-black text-white tracking-tight mt-1 font-display">
-            {booking.chargerTitle}
-          </h3>
+          <Link
+            href={`/host/chargers/${booking.chargerId}`}
+            className="group/title inline-block focus:outline-none"
+          >
+            <h3 className="text-lg font-black text-white tracking-tight mt-1 font-display group-hover/title:text-cyan-400 transition-colors">
+              {booking.chargerTitle}
+            </h3>
+          </Link>
         </div>
 
         <div className="flex flex-col items-start sm:items-end gap-1">

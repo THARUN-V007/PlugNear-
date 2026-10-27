@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ArrowRight, MapPin, PlugZap, ShieldCheck, Zap } from "lucide-react";
 import {
   type DriverBookingItem,
@@ -103,9 +104,14 @@ export default function BookingCard({
             </span>
           </div>
 
-          <h3 className="text-lg font-black text-white line-clamp-1 mt-1 font-display">
-            {booking.chargerTitle}
-          </h3>
+          <Link
+            href={`/driver/chargers/${booking.chargerId}`}
+            className="group/title inline-block focus:outline-none"
+          >
+            <h3 className="text-lg font-black text-white line-clamp-1 mt-1 font-display group-hover/title:text-primary transition-colors">
+              {booking.chargerTitle}
+            </h3>
+          </Link>
         </div>
 
         <div className="sm:text-right shrink-0">

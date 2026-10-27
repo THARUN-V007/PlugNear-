@@ -25,6 +25,7 @@ export default function DriverBookingsView({
 }: DriverBookingsViewProps) {
   const [bookings, setBookings] = useState<DriverBookingItem[]>(initialBookings);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const { upcoming, past } = groupDriverBookings(bookings);
 
@@ -32,6 +33,7 @@ export default function DriverBookingsView({
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" } : b))
     );
+    setToastMessage("Booking cancelled successfully and moved to Past history.");
   };
 
   const displayedBookings = activeTab === "upcoming" ? upcoming : past;
@@ -57,6 +59,20 @@ export default function DriverBookingsView({
           <span>&rarr;</span>
         </Link>
       </div>
+
+      {/* Cancellation Notice Banner */}
+      {toastMessage && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-3.5 text-xs font-semibold text-primary">
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-white transition"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* 2. Tabs: Upcoming vs Past */}
       <div className="flex items-center gap-2 border-b border-[#2C303B]">

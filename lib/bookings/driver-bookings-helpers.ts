@@ -80,43 +80,43 @@ export function getStatusBadgeDetails(status: BookingStatus): StatusBadgeDetails
     case "requested":
       return {
         label: "Requested",
-        badgeStyle: "bg-amber-100 text-amber-900 border-amber-300",
+        badgeStyle: "bg-amber-500/10 text-amber-400 border-amber-500/30",
         helpText: "Waiting for the host to review and approve your booking request.",
       };
     case "confirmed":
       return {
         label: "Confirmed",
-        badgeStyle: "bg-emerald-100 text-emerald-900 border-emerald-300",
+        badgeStyle: "bg-[#39FF14]/15 text-[#39FF14] border-[#39FF14]/30 shadow-[0_0_12px_rgba(57,255,20,0.15)]",
         helpText: "Confirmed! The host accepted your booking. Exact address and driving directions unlocked.",
       };
     case "declined":
       return {
         label: "Declined",
-        badgeStyle: "bg-rose-100 text-rose-900 border-rose-300",
+        badgeStyle: "bg-rose-500/10 text-rose-400 border-rose-500/30",
         helpText: "The host declined this booking request.",
       };
     case "cancelled":
       return {
         label: "Cancelled",
-        badgeStyle: "bg-slate-100 text-slate-700 border-slate-300",
+        badgeStyle: "bg-[#242933] text-slate-400 border-[#2C303B]",
         helpText: "This booking was cancelled.",
       };
     case "expired":
       return {
         label: "Expired",
-        badgeStyle: "bg-slate-100 text-slate-600 border-slate-300",
+        badgeStyle: "bg-[#242933] text-slate-500 border-[#2C303B]",
         helpText: "Expired: the host did not respond in time before the scheduled slot arrived.",
       };
     case "completed":
       return {
         label: "Completed",
-        badgeStyle: "bg-blue-100 text-blue-900 border-blue-300",
+        badgeStyle: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
         helpText: "Charging session completed.",
       };
     default:
       return {
         label: status,
-        badgeStyle: "bg-slate-100 text-slate-700 border-slate-300",
+        badgeStyle: "bg-[#242933] text-slate-400 border-[#2C303B]",
         helpText: "",
       };
   }
