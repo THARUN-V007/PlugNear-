@@ -57,6 +57,12 @@ export function Navbar({ profile, email, pendingBookingsCount }: NavbarProps) {
                 Dashboard
               </Link>
               <Link
+                href="/host/chargers"
+                className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-purple-700 hover:bg-slate-50 transition"
+              >
+                My Chargers
+              </Link>
+              <Link
                 href="/host/bookings"
                 className="rounded-xl px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-purple-700 hover:bg-slate-50 transition flex items-center gap-1.5"
               >

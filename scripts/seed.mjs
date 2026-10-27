@@ -184,6 +184,7 @@ async function seed() {
       host_connection_type: "dedicated_ev",
       notes: "Dedicated basement parking bay. Access card available with security.",
       is_active: true,
+      electricity_permission_acknowledged: true,
     },
     {
       id: "a2222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -198,6 +199,7 @@ async function seed() {
       host_connection_type: "domestic",
       notes: "Driveway socket. Ring the bell on arrival.",
       is_active: true,
+      electricity_permission_acknowledged: true,
     },
     {
       id: "a3333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -212,6 +214,7 @@ async function seed() {
       host_connection_type: "commercial",
       notes: "Commercial courtyard fast charger. 24x7 gate guard.",
       is_active: true,
+      electricity_permission_acknowledged: true,
     },
     {
       id: "a4444444-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -226,10 +229,11 @@ async function seed() {
       host_connection_type: "dedicated_ev",
       notes: "Covered porch slot with Type 2 tethered cable.",
       is_active: true,
+      electricity_permission_acknowledged: true,
     },
     {
       id: "a5555555-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      host_id: host2Id,
+      host_id: host1Id,
       title: "CMH Road DC Fast Station (Under Maintenance)",
       address_text: "CMH Road, Indiranagar, Bengaluru 560038",
       latitude: 12.9782,
@@ -240,6 +244,7 @@ async function seed() {
       host_connection_type: "commercial",
       notes: "Currently inactive for firmware calibration.",
       is_active: false,
+      electricity_permission_acknowledged: true,
     },
   ];
 

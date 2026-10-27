@@ -123,7 +123,7 @@ BEGIN
   INSERT INTO public.chargers (
     id, host_id, title, address_text, latitude, longitude,
     connector_type, power_kw, price_per_hour, notes,
-    host_connection_type, is_active
+    host_connection_type, is_active, electricity_permission_acknowledged
   ) VALUES
     (
       v_charger1_id, v_host1_id,
@@ -132,7 +132,7 @@ BEGIN
       12.9719, 77.6412,
       'CCS2', 22.0, 180.00,
       'Prime commercial spot near 100ft Rd junction. Cafe accessible during charging.',
-      'commercial', true
+      'commercial', true, true
     ),
     (
       v_charger2_id, v_host1_id,
@@ -141,7 +141,7 @@ BEGIN
       12.9698, 77.6385,
       'Type 2', 7.4, 120.00,
       'Quiet driveway parking. Suitable for overnight and daytime charging.',
-      'domestic', true
+      'domestic', true, true
     ),
     (
       v_charger3_id, v_host2_id,
@@ -150,7 +150,7 @@ BEGIN
       12.9760, 77.6440,
       'Type 2', 11.0, 140.00,
       'Dedicated metered EV line. Covered parking with security camera.',
-      'dedicated_ev', true
+      'dedicated_ev', true, true
     ),
     (
       v_charger4_id, v_host2_id,
@@ -159,7 +159,7 @@ BEGIN
       12.9635, 77.6480,
       'Bharat AC-001', 3.3, 80.00,
       'Economical slow charger, ideal for 2-wheelers and fleet EVs.',
-      'commercial', true
+      'commercial', true, true
     ),
     (
       v_charger5_id, v_host1_id,
@@ -168,7 +168,7 @@ BEGIN
       12.9782, 77.6390,
       'CCS2', 30.0, 220.00,
       'Currently inactive for firmware calibration.',
-      'commercial', false
+      'commercial', false, true
     );
 
   -- 5. Seed Weekly Availability Windows (Days 0=Sun to 6=Sat)

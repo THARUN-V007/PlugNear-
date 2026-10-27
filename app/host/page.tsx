@@ -84,13 +84,20 @@ export default async function HostHomePage(props: HostPageProps) {
 
           <div className="mt-8 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-xs">
-                <span className="text-2xl">📍</span>
-                <h3 className="mt-2 text-sm font-bold text-slate-900">1. Charger Listing</h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  Interactive map pin placement, power rating, connector type, and hourly tariff.
-                </p>
-              </div>
+              <Link
+                href="/host/chargers"
+                className="group rounded-xl border border-purple-200 p-5 bg-purple-50/40 hover:bg-purple-50 transition shadow-xs flex flex-col justify-between"
+              >
+                <div>
+                  <span className="text-2xl">📍</span>
+                  <h3 className="mt-2 text-sm font-bold text-purple-950 group-hover:text-purple-700 transition">
+                    1. My Charging Points →
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Interactive map pin placement, power rating, connector type, and hourly tariff.
+                  </p>
+                </div>
+              </Link>
 
               <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-xs">
                 <span className="text-2xl">⏰</span>
