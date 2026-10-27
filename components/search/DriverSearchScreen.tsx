@@ -454,6 +454,10 @@ export default function DriverSearchScreen() {
               <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
                 {chargers.map((charger, index) => {
                   const isNearest = index === 0 && isEmergencyMode;
+                  const currentSlot = isEmergencyMode
+                    ? emergencySlot
+                    : kolkataInputsToUtcSlot({ date, startTime, durationMinutes });
+
                   return (
                     <div key={charger.id} className="space-y-3">
                       {index === 1 && isEmergencyMode && (
@@ -468,6 +472,8 @@ export default function DriverSearchScreen() {
                         isSelected={charger.id === selectedChargerId}
                         onSelect={(id) => setSelectedChargerId(id)}
                         isEmergencyHighlight={isNearest}
+                        slot={currentSlot}
+                        isEmergency={isEmergencyMode}
                       />
                     </div>
                   );

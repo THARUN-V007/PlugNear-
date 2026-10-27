@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { SearchResultItem } from "@/lib/search/search-assembly";
 import { formatDistance, formatPrice } from "@/lib/search/search-helpers";
 
@@ -8,6 +9,8 @@ interface ChargerCardProps {
   isSelected: boolean;
   onSelect: (id: string) => void;
   isEmergencyHighlight?: boolean;
+  slot?: { startAt: string; endAt: string } | null;
+  isEmergency?: boolean;
 }
 
 export default function ChargerCard({
@@ -15,7 +18,16 @@ export default function ChargerCard({
   isSelected,
   onSelect,
   isEmergencyHighlight = false,
+  slot,
+  isEmergency = false,
 }: ChargerCardProps) {
+  const queryParams = new URLSearchParams();
+  if (slot?.startAt) queryParams.set("startAt", slot.startAt);
+  if (slot?.endAt) queryParams.set("endAt", slot.endAt);
+  if (isEmergency) queryParams.set("isEmergency", "true");
+
+  const detailsUrl = `/driver/chargers/${charger.id}?${queryParams.toString()}`;
+
   return (
     <div
       onClick={() => onSelect(charger.id)}
@@ -74,21 +86,19 @@ export default function ChargerCard({
         </div>
       </div>
 
-      {/* Disabled booking trigger with Phase label */}
+      {/* Booking trigger: Enabled and passing slot */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-        <span className="text-[11px] text-slate-400 font-medium">
-          Step 5: Booking flow
+        <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+          <span>✓</span> Available for selected slot
         </span>
 
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title="Booking flow arrives in Step 5"
-          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed border border-slate-200"
+        <Link
+          href={detailsUrl}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
         >
           View details & book &rarr;
-        </button>
+        </Link>
       </div>
     </div>
   );
